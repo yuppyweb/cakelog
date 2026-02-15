@@ -22,19 +22,19 @@ func NewZerologLogger(logger *zerolog.Logger) *ZerologLogger {
 }
 
 func (zl *ZerologLogger) Debug(ctx context.Context, msg string, args ...any) {
-	zl.logger.Debug().Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
+	zl.logger.Debug().Ctx(ctx).Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
 }
 
 func (zl *ZerologLogger) Info(ctx context.Context, msg string, args ...any) {
-	zl.logger.Info().Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
+	zl.logger.Info().Ctx(ctx).Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
 }
 
 func (zl *ZerologLogger) Warn(ctx context.Context, msg string, args ...any) {
-	zl.logger.Warn().Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
+	zl.logger.Warn().Ctx(ctx).Fields(map[string]any{zl.ArgsKey: args}).Msg(msg)
 }
 
 func (zl *ZerologLogger) Error(ctx context.Context, err error, args ...any) {
-	zl.logger.Error().Fields(map[string]any{zl.ArgsKey: args}).Msg(err.Error())
+	zl.logger.Error().Ctx(ctx).Fields(map[string]any{zl.ArgsKey: args}).Msg(err.Error())
 }
 
 var _ cakelog.Logger = (*ZerologLogger)(nil)

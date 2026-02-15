@@ -21,19 +21,19 @@ func NewZapLogger(logger *zap.Logger) *ZapLogger {
 	}
 }
 
-func (zl *ZapLogger) Debug(ctx context.Context, msg string, args ...any) {
+func (zl *ZapLogger) Debug(_ context.Context, msg string, args ...any) {
 	zl.logger.Debug(msg, zap.Any(zl.ArgsKey, args))
 }
 
-func (zl *ZapLogger) Info(ctx context.Context, msg string, args ...any) {
+func (zl *ZapLogger) Info(_ context.Context, msg string, args ...any) {
 	zl.logger.Info(msg, zap.Any(zl.ArgsKey, args))
 }
 
-func (zl *ZapLogger) Warn(ctx context.Context, msg string, args ...any) {
+func (zl *ZapLogger) Warn(_ context.Context, msg string, args ...any) {
 	zl.logger.Warn(msg, zap.Any(zl.ArgsKey, args))
 }
 
-func (zl *ZapLogger) Error(ctx context.Context, err error, args ...any) {
+func (zl *ZapLogger) Error(_ context.Context, err error, args ...any) {
 	zl.logger.Error(err.Error(), zap.Any(zl.ArgsKey, args))
 }
 

@@ -22,19 +22,19 @@ func NewLogrusLogger(logger *logrus.Logger) *LogrusLogger {
 }
 
 func (ll *LogrusLogger) Debug(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithField(ll.ArgsKey, args).Debug(msg)
+	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Debug(msg)
 }
 
 func (ll *LogrusLogger) Info(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithField(ll.ArgsKey, args).Info(msg)
+	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Info(msg)
 }
 
 func (ll *LogrusLogger) Warn(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithField(ll.ArgsKey, args).Warn(msg)
+	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Warn(msg)
 }
 
 func (ll *LogrusLogger) Error(ctx context.Context, err error, args ...any) {
-	ll.logger.WithField(ll.ArgsKey, args).Error(err)
+	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Error(err)
 }
 
 var _ cakelog.Logger = (*LogrusLogger)(nil)

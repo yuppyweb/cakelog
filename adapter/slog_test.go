@@ -38,12 +38,12 @@ var _ slog.Handler = (*mockSlogHandler)(nil)
 func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "debugTestKey", "debug test value")
-	values := []any{"key1", "debug", "key2", 42}
+	values := []any{"debug", 42}
 
 	log.Debug(ctx, "debug message", values...)
 
@@ -67,13 +67,17 @@ func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != adapter.DefaultSlogArgsKey {
+			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -97,12 +101,12 @@ func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "infoTestKey", "info test value")
-	values := []any{"key1", "info", "key2", 67}
+	values := []any{"info", 67}
 
 	log.Info(ctx, "info message", values...)
 
@@ -126,13 +130,17 @@ func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != adapter.DefaultSlogArgsKey {
+			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -156,12 +164,12 @@ func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "warnTestKey", "warn test value")
-	values := []any{"key1", "warn", "key2", 89}
+	values := []any{"warn", 89}
 
 	log.Warn(ctx, "warn message", values...)
 
@@ -185,13 +193,17 @@ func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != adapter.DefaultSlogArgsKey {
+			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -215,12 +227,12 @@ func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "errorTestKey", "error test value")
-	values := []any{"key1", "error", "key2", 123}
+	values := []any{"error", 123}
 
 	log.Error(ctx, errors.New("error message"), values...)
 
@@ -244,13 +256,17 @@ func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != adapter.DefaultSlogArgsKey {
+			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -274,13 +290,13 @@ func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 func TestSlogLogger_DebugWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 	log.ArgsKey = "debugArgs"
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "debugTestKey", "debug test value")
-	values := []any{"key1", "debug", "key2", 42}
+	values := []any{"debug", 42}
 
 	log.Debug(ctx, "debug message", values...)
 
@@ -304,13 +320,17 @@ func TestSlogLogger_DebugWithCustomArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != "debugArgs" {
-			t.Errorf("expected attribute key 'debugArgs', got '%s'", a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "debugArgs" {
+			t.Errorf("expected attribute key 'debugArgs', got '%s'", attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -334,13 +354,13 @@ func TestSlogLogger_DebugWithCustomArgsKey(t *testing.T) {
 func TestSlogLogger_InfoWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 	log.ArgsKey = "infoArgs"
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "infoTestKey", "info test value")
-	values := []any{"key1", "info", "key2", 67}
+	values := []any{"info", 67}
 
 	log.Info(ctx, "info message", values...)
 
@@ -364,13 +384,17 @@ func TestSlogLogger_InfoWithCustomArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != "infoArgs" {
-			t.Errorf("expected attribute key 'infoArgs', got '%s'", a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "infoArgs" {
+			t.Errorf("expected attribute key 'infoArgs', got '%s'", attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -394,13 +418,13 @@ func TestSlogLogger_InfoWithCustomArgsKey(t *testing.T) {
 func TestSlogLogger_WarnWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 	log.ArgsKey = "warnArgs"
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "warnTestKey", "warn test value")
-	values := []any{"key1", "warn", "key2", 89}
+	values := []any{"warn", 89}
 
 	log.Warn(ctx, "warn message", values...)
 
@@ -424,13 +448,17 @@ func TestSlogLogger_WarnWithCustomArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != "warnArgs" {
-			t.Errorf("expected attribute key 'warnArgs', got '%s'", a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "warnArgs" {
+			t.Errorf("expected attribute key 'warnArgs', got '%s'", attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
@@ -454,13 +482,13 @@ func TestSlogLogger_WarnWithCustomArgsKey(t *testing.T) {
 func TestSlogLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockSlogHandler{}
+	handler := new(mockSlogHandler)
 	log := adapter.NewSlogLogger(slog.New(handler))
 	log.ArgsKey = "errorArgs"
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "errorTestKey", "error test value")
-	values := []any{"key1", "error", "key2", 123}
+	values := []any{"error", 123}
 
 	log.Error(ctx, errors.New("error message"), values...)
 
@@ -484,13 +512,17 @@ func TestSlogLogger_ErrorWithCustomArgsKey(t *testing.T) {
 
 	checkedAttr := false
 
-	record.Attrs(func(a slog.Attr) bool {
-		if a.Key != "errorArgs" {
-			t.Errorf("expected attribute key 'errorArgs', got '%s'", a.Key)
+	record.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "errorArgs" {
+			t.Errorf("expected attribute key 'errorArgs', got '%s'", attr.Key)
 		}
 
-		if a.Value.String() != slog.AnyValue(values).String() {
-			t.Errorf("expected attribute value '%s', got '%s'", slog.AnyValue(values).String(), a.Value.String())
+		if attr.Value.String() != slog.AnyValue(values).String() {
+			t.Errorf(
+				"expected attribute value '%s', got '%s'",
+				slog.AnyValue(values).String(),
+				attr.Value.String(),
+			)
 		}
 
 		checkedAttr = true
