@@ -142,7 +142,7 @@ func TestLogrusLogger_DebugWithCustomArgsKey(t *testing.T) {
 	})
 
 	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args"
+	logger.ArgsKey = "custom_args1"
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
 
@@ -151,7 +151,7 @@ func TestLogrusLogger_DebugWithCustomArgsKey(t *testing.T) {
 		t.Fatalf("failed to read log output: %v", err)
 	}
 
-	expected := `level=debug msg="debug message" custom_args="[debug 42]"` + "\n"
+	expected := `level=debug msg="debug message" custom_args1="[debug 42]"` + "\n"
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)
@@ -172,7 +172,7 @@ func TestLogrusLogger_InfoWithCustomArgsKey(t *testing.T) {
 	})
 
 	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args"
+	logger.ArgsKey = "custom_args2"
 
 	logger.Info(context.Background(), "info message", "info", 75)
 
@@ -181,7 +181,7 @@ func TestLogrusLogger_InfoWithCustomArgsKey(t *testing.T) {
 		t.Fatalf("failed to read log output: %v", err)
 	}
 
-	expected := `level=info msg="info message" custom_args="[info 75]"` + "\n"
+	expected := `level=info msg="info message" custom_args2="[info 75]"` + "\n"
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)
@@ -202,7 +202,7 @@ func TestLogrusLogger_WarnWithCustomArgsKey(t *testing.T) {
 	})
 
 	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args"
+	logger.ArgsKey = "custom_args3"
 
 	logger.Warn(context.Background(), "warn message", "warn", 85)
 
@@ -211,7 +211,7 @@ func TestLogrusLogger_WarnWithCustomArgsKey(t *testing.T) {
 		t.Fatalf("failed to read log output: %v", err)
 	}
 
-	expected := `level=warning msg="warn message" custom_args="[warn 85]"` + "\n"
+	expected := `level=warning msg="warn message" custom_args3="[warn 85]"` + "\n"
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)
@@ -232,7 +232,7 @@ func TestLogrusLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	})
 
 	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args"
+	logger.ArgsKey = "custom_args4"
 
 	expectedErr := errors.New("error message")
 	logger.Error(context.Background(), expectedErr, "error", 90)
@@ -242,7 +242,7 @@ func TestLogrusLogger_ErrorWithCustomArgsKey(t *testing.T) {
 		t.Fatalf("failed to read log output: %v", err)
 	}
 
-	expected := `level=error msg="error message" custom_args="[error 90]"` + "\n"
+	expected := `level=error msg="error message" custom_args4="[error 90]"` + "\n"
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)

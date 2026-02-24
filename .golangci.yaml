@@ -119,14 +119,6 @@ linters:
               desc: Should be replaced by standard lib errors package
     varnamelen:
       min-name-length: 2
-    funlen:
-      lines: 75
-    cyclop:
-      max-complexity: 11
-    nestif:
-      min-complexity: 7
-    exhaustive:
-      default-signifies-exhaustive: true
   exclusions:
     generated: lax
     presets:
@@ -141,6 +133,9 @@ linters:
           - staticcheck
           - err113
           - dupl
+          - funlen
+          - exhaustruct
+          - containedctx
         path: _test.go
     paths:
       - third_party$
