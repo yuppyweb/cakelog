@@ -136,6 +136,10 @@ linters:
           - funlen
           - exhaustruct
           - containedctx
+          - cyclop
+          - gocyclo
+          - goconst
+          - maintidx
         path: _test.go
     paths:
       - third_party$
