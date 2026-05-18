@@ -2,49 +2,69 @@ package adapter
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/yuppyweb/cakelog"
 )
 
-// Is the default key under which context arguments will be stored in slog entries.
-const DefaultSlogArgsKey = "context"
+var (
+	ErrNilSlogLogger = errors.New("is nil slog.Logger")
+	ErrNilSlogOption = errors.New("is nil slog option")
+)
 
-// Is an adapter that allows using a slog.Logger as a cakelog.Logger.
+// SlogLogger is an adapter that allows using a slog.Logger as a cakelog.Logger.
 type SlogLogger struct {
 	// The underlying slog.Logger to which log messages will be forwarded.
-	Logger *slog.Logger
+	log *slog.Logger
 
-	// The key under which the context arguments will be stored in slog entries.
-	ArgsKey string
+	// The options for configuring the SlogLogger behavior.
+	opt *Options
 }
 
-// Creates a new SlogLogger that wraps the provided slog.Logger.
-func NewSlogLogger(logger *slog.Logger) *SlogLogger {
-	return &SlogLogger{
-		Logger:  logger,
-		ArgsKey: DefaultSlogArgsKey,
+// NewSlogLogger creates a new SlogLogger that wraps the provided slog.Logger.
+func NewSlogLogger(logger *slog.Logger, opts ...Option) (*SlogLogger, error) {
+	if logger == nil {
+		return nil, ErrNilSlogLogger
 	}
+
+	options := DefaultOptions()
+
+	for _, opt := range opts {
+		if opt == nil {
+			return nil, ErrNilSlogOption
+		}
+
+		if err := opt(options); err != nil {
+			return nil, fmt.Errorf("failed to apply option: %w", err)
+		}
+	}
+
+	return &SlogLogger{
+		log: logger,
+		opt: options,
+	}, nil
 }
 
-// Sends a debug message to the underlying slog.Logger with the provided context and arguments.
+// Debug sends a debug message to the underlying slog.Logger with the provided context and arguments.
 func (sl *SlogLogger) Debug(ctx context.Context, msg string, args ...any) {
-	sl.Logger.DebugContext(ctx, msg, slog.Any(sl.ArgsKey, args))
+	sl.log.DebugContext(ctx, msg, slog.Any(sl.opt.argsKey, args))
 }
 
-// Sends an info message to the underlying slog.Logger with the provided context and arguments.
+// Info sends an info message to the underlying slog.Logger with the provided context and arguments.
 func (sl *SlogLogger) Info(ctx context.Context, msg string, args ...any) {
-	sl.Logger.InfoContext(ctx, msg, slog.Any(sl.ArgsKey, args))
+	sl.log.InfoContext(ctx, msg, slog.Any(sl.opt.argsKey, args))
 }
 
-// Sends a warning message to the underlying slog.Logger with the provided context and arguments.
+// Warn sends a warning message to the underlying slog.Logger with the provided context and arguments.
 func (sl *SlogLogger) Warn(ctx context.Context, msg string, args ...any) {
-	sl.Logger.WarnContext(ctx, msg, slog.Any(sl.ArgsKey, args))
+	sl.log.WarnContext(ctx, msg, slog.Any(sl.opt.argsKey, args))
 }
 
-// Sends an error message to the underlying slog.Logger with the provided context, error, and arguments.
+// Error sends an error message to the underlying slog.Logger with the provided context, error, and arguments.
 func (sl *SlogLogger) Error(ctx context.Context, err error, args ...any) {
-	sl.Logger.ErrorContext(ctx, err.Error(), slog.Any(sl.ArgsKey, args))
+	sl.log.ErrorContext(ctx, err.Error(), slog.Any(sl.opt.argsKey, args))
 }
 
 // Ensures that SlogLogger implements the cakelog.Logger interface.

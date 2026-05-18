@@ -2,49 +2,69 @@ package adapter
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yuppyweb/cakelog"
 )
 
-// Is the default key under which context arguments will be stored in logrus entries.
-const DefaultLogrusArgsKey = "context"
+var (
+	ErrNilLogrusLogger = errors.New("is nil logrus.Logger")
+	ErrNilLogrusOption = errors.New("is nil logrus option")
+)
 
-// Is an adapter that allows using a logrus.Logger as a cakelog.Logger.
+// LogrusLogger is an adapter that allows using a logrus.Logger as a cakelog.Logger.
 type LogrusLogger struct {
 	// The underlying logrus.Logger to which log messages will be forwarded.
-	logger *logrus.Logger
+	log *logrus.Logger
 
-	// The key under which the context arguments will be stored in logrus entries.
-	ArgsKey string
+	// The options for configuring the LogrusLogger behavior.
+	opt *Options
 }
 
-// Creates a new LogrusLogger that wraps the provided logrus.Logger.
-func NewLogrusLogger(logger *logrus.Logger) *LogrusLogger {
-	return &LogrusLogger{
-		logger:  logger,
-		ArgsKey: DefaultLogrusArgsKey,
+// NewLogrusLogger creates a new LogrusLogger that wraps the provided logrus.Logger.
+func NewLogrusLogger(logger *logrus.Logger, opts ...Option) (*LogrusLogger, error) {
+	if logger == nil {
+		return nil, ErrNilLogrusLogger
 	}
+
+	options := DefaultOptions()
+
+	for _, opt := range opts {
+		if opt == nil {
+			return nil, ErrNilLogrusOption
+		}
+
+		if err := opt(options); err != nil {
+			return nil, fmt.Errorf("failed to apply option: %w", err)
+		}
+	}
+
+	return &LogrusLogger{
+		log: logger,
+		opt: options,
+	}, nil
 }
 
-// Sends a debug message to the underlying logrus.Logger with the provided context and arguments.
+// Debug sends a debug message to the underlying logrus.Logger with the provided context and arguments.
 func (ll *LogrusLogger) Debug(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Debug(msg)
+	ll.log.WithContext(ctx).WithField(ll.opt.argsKey, args).Debug(msg)
 }
 
-// Sends an info message to the underlying logrus.Logger with the provided context and arguments.
+// Info sends an info message to the underlying logrus.Logger with the provided context and arguments.
 func (ll *LogrusLogger) Info(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Info(msg)
+	ll.log.WithContext(ctx).WithField(ll.opt.argsKey, args).Info(msg)
 }
 
-// Sends a warning message to the underlying logrus.Logger with the provided context and arguments.
+// Warn sends a warning message to the underlying logrus.Logger with the provided context and arguments.
 func (ll *LogrusLogger) Warn(ctx context.Context, msg string, args ...any) {
-	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Warn(msg)
+	ll.log.WithContext(ctx).WithField(ll.opt.argsKey, args).Warn(msg)
 }
 
-// Sends an error message to the underlying logrus.Logger with the provided context, error, and arguments.
+// Error sends an error message to the underlying logrus.Logger with the provided context, error, and arguments.
 func (ll *LogrusLogger) Error(ctx context.Context, err error, args ...any) {
-	ll.logger.WithContext(ctx).WithField(ll.ArgsKey, args).Error(err)
+	ll.log.WithContext(ctx).WithField(ll.opt.argsKey, args).Error(err)
 }
 
 // Ensures that LogrusLogger implements the cakelog.Logger interface.

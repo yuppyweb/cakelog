@@ -5,12 +5,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yuppyweb/cakelog/adapter"
 )
 
+// TestLogrusLogger_DebugWithDefaultArgsKey verifies that LogrusLogger correctly
+// logs debug messages with default args key.
 func TestLogrusLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -24,7 +27,10 @@ func TestLogrusLogger_DebugWithDefaultArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
+	logger, err := adapter.NewLogrusLogger(log)
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
 
@@ -40,6 +46,8 @@ func TestLogrusLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_InfoWithDefaultArgsKey verifies that LogrusLogger correctly
+// logs info messages with default args key.
 func TestLogrusLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -53,7 +61,10 @@ func TestLogrusLogger_InfoWithDefaultArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
+	logger, err := adapter.NewLogrusLogger(log)
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", "info", 75)
 
@@ -69,6 +80,8 @@ func TestLogrusLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_WarnWithDefaultArgsKey verifies that LogrusLogger correctly
+// logs warn messages with default args key.
 func TestLogrusLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -82,7 +95,10 @@ func TestLogrusLogger_WarnWithDefaultArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
+	logger, err := adapter.NewLogrusLogger(log)
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 85)
 
@@ -98,6 +114,8 @@ func TestLogrusLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_ErrorWithDefaultArgsKey verifies that LogrusLogger correctly
+// logs error messages with default args key.
 func TestLogrusLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -111,7 +129,10 @@ func TestLogrusLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
+	logger, err := adapter.NewLogrusLogger(log)
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	expectedErr := errors.New("error message")
 	logger.Error(context.Background(), expectedErr, "error", 90)
@@ -128,6 +149,8 @@ func TestLogrusLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_DebugWithCustomArgsKey verifies that LogrusLogger correctly
+// logs debug messages with custom args key.
 func TestLogrusLogger_DebugWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -141,8 +164,10 @@ func TestLogrusLogger_DebugWithCustomArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args1"
+	logger, err := adapter.NewLogrusLogger(log, adapter.WithArgsKey("custom_args1"))
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
 
@@ -158,6 +183,7 @@ func TestLogrusLogger_DebugWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_InfoWithCustomArgsKey verifies that LogrusLogger correctly logs info messages with custom args key.
 func TestLogrusLogger_InfoWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -171,8 +197,10 @@ func TestLogrusLogger_InfoWithCustomArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args2"
+	logger, err := adapter.NewLogrusLogger(log, adapter.WithArgsKey("custom_args2"))
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", "info", 75)
 
@@ -188,6 +216,7 @@ func TestLogrusLogger_InfoWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_WarnWithCustomArgsKey verifies that LogrusLogger correctly logs warn messages with custom args key.
 func TestLogrusLogger_WarnWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -201,8 +230,10 @@ func TestLogrusLogger_WarnWithCustomArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args3"
+	logger, err := adapter.NewLogrusLogger(log, adapter.WithArgsKey("custom_args3"))
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 85)
 
@@ -218,6 +249,8 @@ func TestLogrusLogger_WarnWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestLogrusLogger_ErrorWithCustomArgsKey verifies that LogrusLogger correctly
+// logs error messages with custom args key.
 func TestLogrusLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -231,8 +264,10 @@ func TestLogrusLogger_ErrorWithCustomArgsKey(t *testing.T) {
 		DisableColors:    true,
 	})
 
-	logger := adapter.NewLogrusLogger(log)
-	logger.ArgsKey = "custom_args4"
+	logger, err := adapter.NewLogrusLogger(log, adapter.WithArgsKey("custom_args4"))
+	if err != nil {
+		t.Fatalf("failed to create LogrusLogger: %v", err)
+	}
 
 	expectedErr := errors.New("error message")
 	logger.Error(context.Background(), expectedErr, "error", 90)
@@ -246,5 +281,78 @@ func TestLogrusLogger_ErrorWithCustomArgsKey(t *testing.T) {
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)
+	}
+}
+
+// TestNewLogrusLogger_WithNilLogger verifies that NewLogrusLogger returns an error when provided with a nil logger.
+func TestNewLogrusLogger_WithNilLogger(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewLogrusLogger(nil)
+	if err == nil {
+		t.Fatal("expected error when creating LogrusLogger with nil logger, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilLogrusLogger) {
+		t.Fatalf(
+			"unexpected error when creating LogrusLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilLogrusLogger,
+		)
+	}
+}
+
+// TestNewLogrusLogger_WithNilOption verifies that NewLogrusLogger returns an error when provided with a nil option.
+func TestNewLogrusLogger_WithNilOption(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewLogrusLogger(logrus.New(), nil)
+	if err == nil {
+		t.Fatal("expected error when creating LogrusLogger with nil option, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilLogrusOption) {
+		t.Fatalf(
+			"unexpected error when creating LogrusLogger with nil option:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilLogrusOption,
+		)
+	}
+}
+
+// TestNewLogrusLogger_WithInvalidArgsKey verifies that NewLogrusLogger returns
+// an error when provided with an empty args key.
+func TestNewLogrusLogger_WithInvalidArgsKey(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+	log := logrus.New()
+
+	log.SetOutput(buf)
+	log.Level = logrus.DebugLevel
+	log.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp: true,
+		DisableColors:    true,
+	})
+
+	_, err := adapter.NewLogrusLogger(log, adapter.WithArgsKey(""))
+	if err == nil {
+		t.Fatal("expected error when creating LogrusLogger with empty args key, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
+		t.Fatalf(
+			"unexpected error when creating LogrusLogger with empty args key:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrEmptyArgsKey,
+		)
+	}
+
+	if !strings.Contains(err.Error(), "failed to apply option:") {
+		t.Errorf(
+			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
+			err.Error(),
+			"failed to apply option:",
+		)
 	}
 }

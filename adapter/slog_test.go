@@ -4,16 +4,21 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/yuppyweb/cakelog/adapter"
 )
 
+// mockSlogHandler is a custom slog.Handler implementation used for testing the SlogLogger adapter.
+// It captures log records and contexts for verification in tests.
 type mockSlogHandler struct {
 	contexts []context.Context
 	records  []slog.Record
 }
 
+// Handle captures the log record and context when a log message is handled through the SlogLogger,
+// allowing tests to verify that the correct log level, message, and attributes are being used.
 func (h *mockSlogHandler) Handle(ctx context.Context, record slog.Record) error {
 	h.contexts = append(h.contexts, ctx)
 	h.records = append(h.records, record)
@@ -21,25 +26,37 @@ func (h *mockSlogHandler) Handle(ctx context.Context, record slog.Record) error 
 	return nil
 }
 
+// WithAttrs returns a new handler that discards attributes, as the mock handler
+// does not need to handle attributes for testing purposes.
 func (h *mockSlogHandler) WithAttrs([]slog.Attr) slog.Handler {
 	return slog.DiscardHandler
 }
 
+// WithGroup returns a new handler that discards groups, as the mock handler
+// does not need to handle groups for testing purposes.
 func (h *mockSlogHandler) WithGroup(string) slog.Handler {
 	return slog.DiscardHandler
 }
 
+// Enabled always returns true, indicating that all log levels are enabled for this mock handler.
 func (h *mockSlogHandler) Enabled(context.Context, slog.Level) bool {
 	return true
 }
 
+// Assert that mockSlogHandler implements the slog.Handler interface.
+// This allows us to use it as a handler for testing the SlogLogger adapter.
 var _ slog.Handler = (*mockSlogHandler)(nil)
 
+// TestSlogLogger_DebugWithDefaultArgsKey verifies that SlogLogger correctly logs debug messages with default args key.
 func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
+
+	log, err := adapter.NewSlogLogger(slog.New(handler))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "debugTestKey", "debug test value")
@@ -68,8 +85,8 @@ func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	checkedAttr := false
 
 	record.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
+		if attr.Key != "context" {
+			t.Errorf("expected attribute key 'context', got '%s'", attr.Key)
 		}
 
 		if attr.Value.String() != slog.AnyValue(values).String() {
@@ -98,11 +115,16 @@ func TestSlogLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_InfoWithDefaultArgsKey verifies that SlogLogger correctly logs info messages with default args key.
 func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
+
+	log, err := adapter.NewSlogLogger(slog.New(handler))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "infoTestKey", "info test value")
@@ -131,8 +153,8 @@ func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	checkedAttr := false
 
 	record.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
+		if attr.Key != "context" {
+			t.Errorf("expected attribute key 'context', got '%s'", attr.Key)
 		}
 
 		if attr.Value.String() != slog.AnyValue(values).String() {
@@ -161,11 +183,16 @@ func TestSlogLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_WarnWithDefaultArgsKey verifies that SlogLogger correctly logs warn messages with default args key.
 func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
+
+	log, err := adapter.NewSlogLogger(slog.New(handler))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "warnTestKey", "warn test value")
@@ -194,8 +221,8 @@ func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	checkedAttr := false
 
 	record.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
+		if attr.Key != "context" {
+			t.Errorf("expected attribute key 'context', got '%s'", attr.Key)
 		}
 
 		if attr.Value.String() != slog.AnyValue(values).String() {
@@ -224,11 +251,16 @@ func TestSlogLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_ErrorWithDefaultArgsKey verifies that SlogLogger correctly logs error messages with default args key.
 func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
+
+	log, err := adapter.NewSlogLogger(slog.New(handler))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "errorTestKey", "error test value")
@@ -257,8 +289,8 @@ func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	checkedAttr := false
 
 	record.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != adapter.DefaultSlogArgsKey {
-			t.Errorf("expected attribute key '%s', got '%s'", adapter.DefaultSlogArgsKey, attr.Key)
+		if attr.Key != "context" {
+			t.Errorf("expected attribute key 'context', got '%s'", attr.Key)
 		}
 
 		if attr.Value.String() != slog.AnyValue(values).String() {
@@ -287,12 +319,16 @@ func TestSlogLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_DebugWithCustomArgsKey verifies that SlogLogger correctly logs debug messages with custom args key.
 func TestSlogLogger_DebugWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
-	log.ArgsKey = "debugArgs"
+
+	log, err := adapter.NewSlogLogger(slog.New(handler), adapter.WithArgsKey("debugArgs"))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "debugTestKey", "debug test value")
@@ -351,12 +387,16 @@ func TestSlogLogger_DebugWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_InfoWithCustomArgsKey verifies that SlogLogger correctly logs info messages with custom args key.
 func TestSlogLogger_InfoWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
-	log.ArgsKey = "infoArgs"
+
+	log, err := adapter.NewSlogLogger(slog.New(handler), adapter.WithArgsKey("infoArgs"))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "infoTestKey", "info test value")
@@ -415,12 +455,16 @@ func TestSlogLogger_InfoWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_WarnWithCustomArgsKey verifies that SlogLogger correctly logs warn messages with custom args key.
 func TestSlogLogger_WarnWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
-	log.ArgsKey = "warnArgs"
+
+	log, err := adapter.NewSlogLogger(slog.New(handler), adapter.WithArgsKey("warnArgs"))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "warnTestKey", "warn test value")
@@ -479,12 +523,16 @@ func TestSlogLogger_WarnWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestSlogLogger_ErrorWithCustomArgsKey verifies that SlogLogger correctly logs error messages with custom args key.
 func TestSlogLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
-	log := adapter.NewSlogLogger(slog.New(handler))
-	log.ArgsKey = "errorArgs"
+
+	log, err := adapter.NewSlogLogger(slog.New(handler), adapter.WithArgsKey("errorArgs"))
+	if err != nil {
+		t.Fatalf("failed to create SlogLogger: %v", err)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "errorTestKey", "error test value")
@@ -540,5 +588,68 @@ func TestSlogLogger_ErrorWithCustomArgsKey(t *testing.T) {
 
 	if handler.contexts[0] != ctx {
 		t.Errorf("expected context %v, got %v", ctx, handler.contexts[0])
+	}
+}
+
+// TestNewSlogLogger_WithNilLogger verifies that NewSlogLogger returns an error when provided with a nil logger.
+func TestNewSlogLogger_WithNilLogger(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewSlogLogger(nil)
+	if err == nil {
+		t.Fatal("expected error when creating SlogLogger with nil logger, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilSlogLogger) {
+		t.Fatalf(
+			"unexpected error when creating SlogLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilSlogLogger,
+		)
+	}
+}
+
+// TestNewSlogLogger_WithNilOption verifies that NewSlogLogger returns an error when provided with a nil option.
+func TestNewSlogLogger_WithNilOption(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewSlogLogger(slog.New(new(mockSlogHandler)), nil)
+	if err == nil {
+		t.Fatal("expected error when creating SlogLogger with nil option, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilSlogOption) {
+		t.Fatalf(
+			"unexpected error when creating SlogLogger with nil option:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilSlogOption,
+		)
+	}
+}
+
+// TestNewSlogLogger_WithInvalidArgsKey verifies that NewSlogLogger returns
+// an error when provided with an empty args key.
+func TestNewSlogLogger_WithInvalidArgsKey(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewSlogLogger(slog.New(&mockSlogHandler{}), adapter.WithArgsKey(""))
+	if err == nil {
+		t.Fatal("expected error when creating SlogLogger with empty args key, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
+		t.Fatalf(
+			"unexpected error when creating SlogLogger with empty args key:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrEmptyArgsKey,
+		)
+	}
+
+	if !strings.Contains(err.Error(), "failed to apply option:") {
+		t.Errorf(
+			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
+			err.Error(),
+			"failed to apply option:",
+		)
 	}
 }

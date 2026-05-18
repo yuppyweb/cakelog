@@ -3,6 +3,7 @@ package adapter_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/yuppyweb/cakelog/adapter"
@@ -10,25 +11,33 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// mockZapCore is a custom zapcore.Core implementation used for testing the ZapLogger adapter.
+// It captures log entries and fields for verification in tests.
 type mockZapCore struct {
 	entry  zapcore.Entry
 	fields []zapcore.Field
 }
 
+// Enabled always returns true, indicating that all log levels are enabled for this mock core.
 func (c *mockZapCore) Enabled(zapcore.Level) bool {
 	return true
 }
 
+// With appends the provided fields to the mock core's fields and returns the core itself for chaining.
 func (c *mockZapCore) With(fields []zapcore.Field) zapcore.Core {
 	c.fields = append(c.fields, fields...)
 
 	return c
 }
 
+// Check adds the log entry to the checked entry if the log level is enabled,
+// allowing the ZapLogger to write log messages through this mock core.
 func (c *mockZapCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	return ce.AddCore(ent, c)
 }
 
+// Write captures the log entry and fields when a log message is written through the ZapLogger,
+// allowing tests to verify that the correct log level, message, and fields are being used.
 func (c *mockZapCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	c.entry = ent
 	c.fields = fields
@@ -36,18 +45,22 @@ func (c *mockZapCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	return nil
 }
 
+// Sync is a no-op for the mock core, as it does not perform any actual I/O operations.
 func (c *mockZapCore) Sync() error {
 	return nil
 }
 
+// TestZapLogger_DebugWithDefaultArgsKey verifies that ZapLogger correctly logs debug messages with default args key.
 func TestZapLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 	values := []any{"debug", 42}
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
+	logger, err := adapter.NewZapLogger(zap.New(mockCore))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", values...)
 
@@ -56,7 +69,7 @@ func TestZapLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	}
 
 	expectedFields := []zapcore.Field{
-		zap.Any(adapter.DefaultZapArgsKey, values),
+		zap.Any("context", values),
 	}
 
 	if len(mockCore.fields) != len(expectedFields) {
@@ -95,14 +108,17 @@ func TestZapLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_InfoWithDefaultArgsKey verifies that ZapLogger correctly logs info messages with default args key.
 func TestZapLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 	values := []any{"info", 65}
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
+	logger, err := adapter.NewZapLogger(zap.New(mockCore))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", values...)
 
@@ -111,7 +127,7 @@ func TestZapLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	}
 
 	expectedFields := []zapcore.Field{
-		zap.Any(adapter.DefaultZapArgsKey, values),
+		zap.Any("context", values),
 	}
 
 	if len(mockCore.fields) != len(expectedFields) {
@@ -150,14 +166,17 @@ func TestZapLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_WarnWithDefaultArgsKey verifies that ZapLogger correctly logs warn messages with default args key.
 func TestZapLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 	values := []any{"warn", 99}
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
+	logger, err := adapter.NewZapLogger(zap.New(mockCore))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", values...)
 
@@ -166,7 +185,7 @@ func TestZapLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	}
 
 	expectedFields := []zapcore.Field{
-		zap.Any(adapter.DefaultZapArgsKey, values),
+		zap.Any("context", values),
 	}
 
 	if len(mockCore.fields) != len(expectedFields) {
@@ -205,6 +224,7 @@ func TestZapLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_ErrorWithDefaultArgsKey verifies that ZapLogger correctly logs error messages with default args key.
 func TestZapLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -212,8 +232,10 @@ func TestZapLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	values := []any{"error", 123}
 	expectedErr := errors.New("error message")
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
+	logger, err := adapter.NewZapLogger(zap.New(mockCore))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Error(context.Background(), expectedErr, values...)
 
@@ -222,7 +244,7 @@ func TestZapLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	}
 
 	expectedFields := []zapcore.Field{
-		zap.Any(adapter.DefaultZapArgsKey, values),
+		zap.Any("context", values),
 	}
 
 	if len(mockCore.fields) != len(expectedFields) {
@@ -245,6 +267,7 @@ func TestZapLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_DebugWithCustomArgsKey verifies that ZapLogger correctly logs debug messages with custom args key.
 func TestZapLogger_DebugWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -252,9 +275,10 @@ func TestZapLogger_DebugWithCustomArgsKey(t *testing.T) {
 	values := []any{"debug", 42}
 	customKey := "custom_debug"
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
-	logger.ArgsKey = customKey
+	logger, err := adapter.NewZapLogger(zap.New(mockCore), adapter.WithArgsKey(customKey))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", values...)
 
@@ -302,6 +326,7 @@ func TestZapLogger_DebugWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_InfoWithCustomArgsKey verifies that ZapLogger correctly logs info messages with custom args key.
 func TestZapLogger_InfoWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -309,9 +334,10 @@ func TestZapLogger_InfoWithCustomArgsKey(t *testing.T) {
 	values := []any{"info", 65}
 	customKey := "custom_info"
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
-	logger.ArgsKey = customKey
+	logger, err := adapter.NewZapLogger(zap.New(mockCore), adapter.WithArgsKey(customKey))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", values...)
 
@@ -359,6 +385,7 @@ func TestZapLogger_InfoWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_WarnWithCustomArgsKey verifies that ZapLogger correctly logs warn messages with custom args key.
 func TestZapLogger_WarnWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -366,9 +393,10 @@ func TestZapLogger_WarnWithCustomArgsKey(t *testing.T) {
 	values := []any{"warn", 99}
 	customKey := "custom_warn"
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
-	logger.ArgsKey = customKey
+	logger, err := adapter.NewZapLogger(zap.New(mockCore), adapter.WithArgsKey(customKey))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", values...)
 
@@ -416,6 +444,7 @@ func TestZapLogger_WarnWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZapLogger_ErrorWithCustomArgsKey verifies that ZapLogger correctly logs error messages with custom args key.
 func TestZapLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
@@ -424,9 +453,10 @@ func TestZapLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	customKey := "custom_error"
 	expectedErr := errors.New("error message")
 
-	log := zap.New(mockCore)
-	logger := adapter.NewZapLogger(log)
-	logger.ArgsKey = customKey
+	logger, err := adapter.NewZapLogger(zap.New(mockCore), adapter.WithArgsKey(customKey))
+	if err != nil {
+		t.Fatalf("failed to create ZapLogger: %v", err)
+	}
 
 	logger.Error(context.Background(), expectedErr, values...)
 
@@ -471,5 +501,67 @@ func TestZapLogger_ErrorWithCustomArgsKey(t *testing.T) {
 				val,
 			)
 		}
+	}
+}
+
+// TestNewZapLogger_WithNilLogger verifies that NewZapLogger returns an error when provided with a nil logger.
+func TestNewZapLogger_WithNilLogger(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZapLogger(nil)
+	if err == nil {
+		t.Fatal("expected error when creating ZapLogger with nil logger, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilZapLogger) {
+		t.Fatalf(
+			"unexpected error when creating ZapLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilZapLogger,
+		)
+	}
+}
+
+// TestNewZapLogger_WithNilOption verifies that NewZapLogger returns an error when provided with a nil option.
+func TestNewZapLogger_WithNilOption(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZapLogger(zap.NewNop(), nil)
+	if err == nil {
+		t.Fatal("expected error when creating ZapLogger with nil option, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilZapOption) {
+		t.Fatalf(
+			"unexpected error when creating ZapLogger with nil option:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilZapOption,
+		)
+	}
+}
+
+// TestNewZapLogger_WithInvalidArgsKey verifies that NewZapLogger returns an error when provided with an empty args key.
+func TestNewZapLogger_WithInvalidArgsKey(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZapLogger(zap.NewNop(), adapter.WithArgsKey(""))
+	if err == nil {
+		t.Fatal("expected error when creating ZapLogger with empty args key, but got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
+		t.Fatalf(
+			"unexpected error when creating ZapLogger with empty args key:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrEmptyArgsKey,
+		)
+	}
+
+	if !strings.Contains(err.Error(), "failed to apply option:") {
+		t.Errorf(
+			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
+			err.Error(),
+			"failed to apply option:",
+		)
 	}
 }

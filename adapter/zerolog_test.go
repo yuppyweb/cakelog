@@ -6,19 +6,25 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
 	"github.com/yuppyweb/cakelog/adapter"
 )
 
+// TestZerologLogger_DebugWithDefaultArgsKey verifies that ZerologLogger correctly
+// logs debug messages with default args key.
 func TestZerologLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
+	logger, err := adapter.NewZerologLogger(&log)
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
 
@@ -29,7 +35,7 @@ func TestZerologLogger_DebugWithDefaultArgsKey(t *testing.T) {
 
 	expected := fmt.Sprintf(
 		`{"level":"debug","%s":[%q,%d],"message":"debug message"}`+"\n",
-		adapter.DefaultZerologArgsKey, "debug", 42,
+		"context", "debug", 42,
 	)
 
 	if string(output) != expected {
@@ -37,13 +43,18 @@ func TestZerologLogger_DebugWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_InfoWithDefaultArgsKey verifies that ZerologLogger correctly
+// logs info messages with default args key.
 func TestZerologLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
+	logger, err := adapter.NewZerologLogger(&log)
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", "info", 65)
 
@@ -54,7 +65,7 @@ func TestZerologLogger_InfoWithDefaultArgsKey(t *testing.T) {
 
 	expected := fmt.Sprintf(
 		`{"level":"info","%s":[%q,%d],"message":"info message"}`+"\n",
-		adapter.DefaultZerologArgsKey, "info", 65,
+		"context", "info", 65,
 	)
 
 	if string(output) != expected {
@@ -62,13 +73,18 @@ func TestZerologLogger_InfoWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_WarnWithDefaultArgsKey verifies that ZerologLogger correctly
+// logs warn messages with default args key.
 func TestZerologLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
+	logger, err := adapter.NewZerologLogger(&log)
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 80)
 
@@ -79,7 +95,7 @@ func TestZerologLogger_WarnWithDefaultArgsKey(t *testing.T) {
 
 	expected := fmt.Sprintf(
 		`{"level":"warn","%s":[%q,%d],"message":"warn message"}`+"\n",
-		adapter.DefaultZerologArgsKey, "warn", 80,
+		"context", "warn", 80,
 	)
 
 	if string(output) != expected {
@@ -87,16 +103,21 @@ func TestZerologLogger_WarnWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_ErrorWithDefaultArgsKey verifies that ZerologLogger correctly
+// logs error messages with default args key.
 func TestZerologLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
+	logger, err := adapter.NewZerologLogger(&log)
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
-	err := errors.New("test error")
-	logger.Error(context.Background(), err, "error", 99)
+	logErr := errors.New("test error")
+	logger.Error(context.Background(), logErr, "error", 99)
 
 	output, err := io.ReadAll(buf)
 	if err != nil {
@@ -105,7 +126,7 @@ func TestZerologLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 
 	expected := fmt.Sprintf(
 		`{"level":"error","%s":[%q,%d],"message":"test error"}`+"\n",
-		adapter.DefaultZerologArgsKey, "error", 99,
+		"context", "error", 99,
 	)
 
 	if string(output) != expected {
@@ -113,14 +134,18 @@ func TestZerologLogger_ErrorWithDefaultArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_DebugWithCustomArgsKey verifies that ZerologLogger correctly
+// logs debug messages with custom args key.
 func TestZerologLogger_DebugWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
-	logger.ArgsKey = "customArgs1"
+	logger, err := adapter.NewZerologLogger(&log, adapter.WithArgsKey("customArgs1"))
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
 
@@ -139,14 +164,18 @@ func TestZerologLogger_DebugWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_InfoWithCustomArgsKey verifies that ZerologLogger correctly
+// logs info messages with custom args key.
 func TestZerologLogger_InfoWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
-	logger.ArgsKey = "customArgs2"
+	logger, err := adapter.NewZerologLogger(&log, adapter.WithArgsKey("customArgs2"))
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Info(context.Background(), "info message", "info", 65)
 
@@ -165,14 +194,18 @@ func TestZerologLogger_InfoWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_WarnWithCustomArgsKey verifies that ZerologLogger correctly
+// logs warn messages with custom args key.
 func TestZerologLogger_WarnWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
-	logger.ArgsKey = "customArgs3"
+	logger, err := adapter.NewZerologLogger(&log, adapter.WithArgsKey("customArgs3"))
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 80)
 
@@ -191,17 +224,21 @@ func TestZerologLogger_WarnWithCustomArgsKey(t *testing.T) {
 	}
 }
 
+// TestZerologLogger_ErrorWithCustomArgsKey verifies that ZerologLogger correctly
+// logs error messages with custom args key.
 func TestZerologLogger_ErrorWithCustomArgsKey(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
 	log := zerolog.New(buf)
 
-	logger := adapter.NewZerologLogger(&log)
-	logger.ArgsKey = "customArgs4"
+	logger, err := adapter.NewZerologLogger(&log, adapter.WithArgsKey("customArgs4"))
+	if err != nil {
+		t.Fatalf("failed to create ZerologLogger: %v", err)
+	}
 
-	err := errors.New("test error")
-	logger.Error(context.Background(), err, "error", 99)
+	logErr := errors.New("test error")
+	logger.Error(context.Background(), logErr, "error", 99)
 
 	output, err := io.ReadAll(buf)
 	if err != nil {
@@ -215,5 +252,56 @@ func TestZerologLogger_ErrorWithCustomArgsKey(t *testing.T) {
 
 	if string(output) != expected {
 		t.Errorf("unexpected log output:\nGot:  %s\nWant: %s", string(output), expected)
+	}
+}
+
+// TestNewZerologLogger_WithNilLogger verifies that NewZerologLogger returns an error when provided with a nil logger.
+func TestNewZerologLogger_WithNilLogger(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZerologLogger(nil)
+	if err == nil {
+		t.Fatal("expected error when providing nil logger, got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilZerologLogger) {
+		t.Errorf("expected error to be ErrNilZerologLogger, got %v", err)
+	}
+}
+
+// TestNewZerologLogger_WithNilOption verifies that NewZerologLogger returns an error when provided with a nil option.
+func TestNewZerologLogger_WithNilOption(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZerologLogger(&zerolog.Logger{}, nil)
+	if err == nil {
+		t.Fatal("expected error when providing nil option, got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrNilZerologOption) {
+		t.Errorf("expected error to be ErrNilZerologOption, got %v", err)
+	}
+}
+
+// TestNewZerologLogger_WithInvalidArgsKey verifies that NewZerologLogger returns
+// an error when provided with an empty args key.
+func TestNewZerologLogger_WithInvalidArgsKey(t *testing.T) {
+	t.Parallel()
+
+	_, err := adapter.NewZerologLogger(&zerolog.Logger{}, adapter.WithArgsKey(""))
+	if err == nil {
+		t.Fatal("expected error when providing empty args key, got nil")
+	}
+
+	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
+		t.Errorf("expected error to be ErrEmptyArgsKey, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "failed to apply option:") {
+		t.Errorf(
+			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
+			err.Error(),
+			"failed to apply option:",
+		)
 	}
 }
