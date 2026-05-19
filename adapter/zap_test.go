@@ -514,7 +514,7 @@ func TestNewZapLogger_WithNilLogger(t *testing.T) {
 	}
 
 	if !errors.Is(err, adapter.ErrNilZapLogger) {
-		t.Fatalf(
+		t.Errorf(
 			"unexpected error when creating ZapLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
 			adapter.ErrNilZapLogger,
@@ -532,7 +532,7 @@ func TestNewZapLogger_WithNilOption(t *testing.T) {
 	}
 
 	if !errors.Is(err, adapter.ErrNilZapOption) {
-		t.Fatalf(
+		t.Errorf(
 			"unexpected error when creating ZapLogger with nil option:\nGot:  %v\nWant: %v",
 			err,
 			adapter.ErrNilZapOption,
@@ -550,7 +550,7 @@ func TestNewZapLogger_WithInvalidArgsKey(t *testing.T) {
 	}
 
 	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
-		t.Fatalf(
+		t.Errorf(
 			"unexpected error when creating ZapLogger with empty args key:\nGot:  %v\nWant: %v",
 			err,
 			adapter.ErrEmptyArgsKey,

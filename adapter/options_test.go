@@ -15,7 +15,7 @@ func TestWithArgsKey_ErrorNilOptions(t *testing.T) {
 
 	err := opt(nil)
 	if err == nil {
-		t.Error("expected error when providing nil options, got nil")
+		t.Fatal("expected error when providing nil options, got nil")
 	}
 
 	if !errors.Is(err, adapter.ErrNilOptions) {
@@ -32,7 +32,7 @@ func TestWithArgsKey_ErrorEmptyArgsKey(t *testing.T) {
 
 	err := opt(new(adapter.Options))
 	if err == nil {
-		t.Error("expected error when providing empty args key, got nil")
+		t.Fatal("expected error when providing empty args key, got nil")
 	}
 
 	if !errors.Is(err, adapter.ErrEmptyArgsKey) {
