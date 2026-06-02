@@ -513,11 +513,11 @@ func TestNewZapLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when creating ZapLogger with nil logger, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilZapLogger) {
+	if !errors.Is(err, adapter.ErrNilLogger) {
 		t.Errorf(
 			"unexpected error when creating ZapLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilZapLogger,
+			adapter.ErrNilLogger,
 		)
 	}
 }
@@ -531,11 +531,11 @@ func TestNewZapLogger_WithNilOption(t *testing.T) {
 		t.Fatal("expected error when creating ZapLogger with nil option, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilZapOption) {
+	if !errors.Is(err, adapter.ErrNilOption) {
 		t.Errorf(
 			"unexpected error when creating ZapLogger with nil option:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilZapOption,
+			adapter.ErrNilOption,
 		)
 	}
 }

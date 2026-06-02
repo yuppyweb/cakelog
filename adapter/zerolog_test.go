@@ -264,8 +264,12 @@ func TestNewZerologLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when providing nil logger, got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilZerologLogger) {
-		t.Errorf("expected error to be ErrNilZerologLogger, got %v", err)
+	if !errors.Is(err, adapter.ErrNilLogger) {
+		t.Errorf(
+			"unexpected error when creating ZerologLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilLogger,
+		)
 	}
 }
 
@@ -278,8 +282,12 @@ func TestNewZerologLogger_WithNilOption(t *testing.T) {
 		t.Fatal("expected error when providing nil option, got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilZerologOption) {
-		t.Errorf("expected error to be ErrNilZerologOption, got %v", err)
+	if !errors.Is(err, adapter.ErrNilOption) {
+		t.Errorf(
+			"unexpected error when creating ZerologLogger with nil option:\nGot:  %v\nWant: %v",
+			err,
+			adapter.ErrNilOption,
+		)
 	}
 }
 

@@ -8,6 +8,8 @@ import (
 const defaultArgsKey = "context"
 
 var (
+	ErrNilLogger    = errors.New("is nil logger")
+	ErrNilOption    = errors.New("is nil option")
 	ErrNilOptions   = errors.New("is nil options")
 	ErrEmptyArgsKey = errors.New("is empty args key")
 )

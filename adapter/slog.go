@@ -2,16 +2,10 @@ package adapter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
 	"github.com/yuppyweb/cakelog"
-)
-
-var (
-	ErrNilSlogLogger = errors.New("is nil slog.Logger")
-	ErrNilSlogOption = errors.New("is nil slog option")
 )
 
 // SlogLogger is an adapter that allows using a slog.Logger as a cakelog.Logger.
@@ -26,14 +20,14 @@ type SlogLogger struct {
 // NewSlogLogger creates a new SlogLogger that wraps the provided slog.Logger.
 func NewSlogLogger(logger *slog.Logger, opts ...Option) (*SlogLogger, error) {
 	if logger == nil {
-		return nil, ErrNilSlogLogger
+		return nil, ErrNilLogger
 	}
 
 	options := DefaultOptions()
 
 	for _, opt := range opts {
 		if opt == nil {
-			return nil, ErrNilSlogOption
+			return nil, ErrNilOption
 		}
 
 		if err := opt(options); err != nil {
@@ -41,10 +35,7 @@ func NewSlogLogger(logger *slog.Logger, opts ...Option) (*SlogLogger, error) {
 		}
 	}
 
-	return &SlogLogger{
-		log: logger,
-		opt: options,
-	}, nil
+	return &SlogLogger{log: logger, opt: options}, nil
 }
 
 // Debug sends a debug message to the underlying slog.Logger with the provided context and arguments.

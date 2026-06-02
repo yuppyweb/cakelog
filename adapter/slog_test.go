@@ -600,11 +600,11 @@ func TestNewSlogLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when creating SlogLogger with nil logger, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilSlogLogger) {
+	if !errors.Is(err, adapter.ErrNilLogger) {
 		t.Fatalf(
 			"unexpected error when creating SlogLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilSlogLogger,
+			adapter.ErrNilLogger,
 		)
 	}
 }
@@ -618,11 +618,11 @@ func TestNewSlogLogger_WithNilOption(t *testing.T) {
 		t.Fatal("expected error when creating SlogLogger with nil option, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilSlogOption) {
+	if !errors.Is(err, adapter.ErrNilOption) {
 		t.Fatalf(
 			"unexpected error when creating SlogLogger with nil option:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilSlogOption,
+			adapter.ErrNilOption,
 		)
 	}
 }

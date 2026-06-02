@@ -2,16 +2,10 @@ package adapter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yuppyweb/cakelog"
-)
-
-var (
-	ErrNilLogrusLogger = errors.New("is nil logrus.Logger")
-	ErrNilLogrusOption = errors.New("is nil logrus option")
 )
 
 // LogrusLogger is an adapter that allows using a logrus.Logger as a cakelog.Logger.
@@ -26,14 +20,14 @@ type LogrusLogger struct {
 // NewLogrusLogger creates a new LogrusLogger that wraps the provided logrus.Logger.
 func NewLogrusLogger(logger *logrus.Logger, opts ...Option) (*LogrusLogger, error) {
 	if logger == nil {
-		return nil, ErrNilLogrusLogger
+		return nil, ErrNilLogger
 	}
 
 	options := DefaultOptions()
 
 	for _, opt := range opts {
 		if opt == nil {
-			return nil, ErrNilLogrusOption
+			return nil, ErrNilOption
 		}
 
 		if err := opt(options); err != nil {
@@ -41,10 +35,7 @@ func NewLogrusLogger(logger *logrus.Logger, opts ...Option) (*LogrusLogger, erro
 		}
 	}
 
-	return &LogrusLogger{
-		log: logger,
-		opt: options,
-	}, nil
+	return &LogrusLogger{log: logger, opt: options}, nil
 }
 
 // Debug sends a debug message to the underlying logrus.Logger with the provided context and arguments.

@@ -2,16 +2,10 @@ package adapter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/yuppyweb/cakelog"
 	"go.uber.org/zap"
-)
-
-var (
-	ErrNilZapLogger = errors.New("is nil zap.Logger")
-	ErrNilZapOption = errors.New("is nil zap option")
 )
 
 // ZapLogger is an adapter that allows using a zap.Logger as a cakelog.Logger.
@@ -26,14 +20,14 @@ type ZapLogger struct {
 // NewZapLogger creates a new ZapLogger that wraps the provided zap.Logger.
 func NewZapLogger(logger *zap.Logger, opts ...Option) (*ZapLogger, error) {
 	if logger == nil {
-		return nil, ErrNilZapLogger
+		return nil, ErrNilLogger
 	}
 
 	options := DefaultOptions()
 
 	for _, opt := range opts {
 		if opt == nil {
-			return nil, ErrNilZapOption
+			return nil, ErrNilOption
 		}
 
 		if err := opt(options); err != nil {
@@ -41,10 +35,7 @@ func NewZapLogger(logger *zap.Logger, opts ...Option) (*ZapLogger, error) {
 		}
 	}
 
-	return &ZapLogger{
-		log: logger,
-		opt: options,
-	}, nil
+	return &ZapLogger{log: logger, opt: options}, nil
 }
 
 // Debug sends a debug message to the underlying zap.Logger with the provided context and arguments.

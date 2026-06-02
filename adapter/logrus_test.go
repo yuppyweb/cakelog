@@ -293,11 +293,11 @@ func TestNewLogrusLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when creating LogrusLogger with nil logger, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilLogrusLogger) {
+	if !errors.Is(err, adapter.ErrNilLogger) {
 		t.Fatalf(
 			"unexpected error when creating LogrusLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilLogrusLogger,
+			adapter.ErrNilLogger,
 		)
 	}
 }
@@ -311,11 +311,11 @@ func TestNewLogrusLogger_WithNilOption(t *testing.T) {
 		t.Fatal("expected error when creating LogrusLogger with nil option, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilLogrusOption) {
+	if !errors.Is(err, adapter.ErrNilOption) {
 		t.Fatalf(
 			"unexpected error when creating LogrusLogger with nil option:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilLogrusOption,
+			adapter.ErrNilOption,
 		)
 	}
 }

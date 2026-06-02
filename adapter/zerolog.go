@@ -2,16 +2,10 @@ package adapter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog"
 	"github.com/yuppyweb/cakelog"
-)
-
-var (
-	ErrNilZerologLogger = errors.New("is nil zerolog.Logger")
-	ErrNilZerologOption = errors.New("is nil zerolog option")
 )
 
 // ZerologLogger is an adapter that allows using a zerolog.Logger as a cakelog.Logger.
@@ -26,14 +20,14 @@ type ZerologLogger struct {
 // NewZerologLogger creates a new ZerologLogger that wraps the provided zerolog.Logger.
 func NewZerologLogger(logger *zerolog.Logger, opts ...Option) (*ZerologLogger, error) {
 	if logger == nil {
-		return nil, ErrNilZerologLogger
+		return nil, ErrNilLogger
 	}
 
 	options := DefaultOptions()
 
 	for _, opt := range opts {
 		if opt == nil {
-			return nil, ErrNilZerologOption
+			return nil, ErrNilOption
 		}
 
 		if err := opt(options); err != nil {
@@ -41,10 +35,7 @@ func NewZerologLogger(logger *zerolog.Logger, opts ...Option) (*ZerologLogger, e
 		}
 	}
 
-	return &ZerologLogger{
-		log: logger,
-		opt: options,
-	}, nil
+	return &ZerologLogger{log: logger, opt: options}, nil
 }
 
 // Debug sends a debug message to the underlying zerolog.Logger with the provided context and arguments.
