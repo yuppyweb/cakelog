@@ -21,7 +21,7 @@ func TestWithDebugCallback_NilOptions(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOpts) {
+	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
 		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
 	}
 }
@@ -38,8 +38,8 @@ func TestWithDebugCallback_NilFunc(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilDebugFunc) {
-		t.Errorf("expected error to be ErrNilDebugFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackDebugFunc) {
+		t.Errorf("expected error to be ErrNilCallbackDebugFunc, got %v", err)
 	}
 }
 
@@ -68,7 +68,7 @@ func TestWithInfoCallback_NilOptions(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOpts) {
+	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
 		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
 	}
 }
@@ -85,8 +85,8 @@ func TestWithInfoCallback_NilFunc(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilInfoFunc) {
-		t.Errorf("expected error to be ErrNilInfoFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackInfoFunc) {
+		t.Errorf("expected error to be ErrNilCallbackInfoFunc, got %v", err)
 	}
 }
 
@@ -115,7 +115,7 @@ func TestWithWarnCallback_NilOptions(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOpts) {
+	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
 		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
 	}
 }
@@ -132,8 +132,8 @@ func TestWithWarnCallback_NilFunc(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilWarnFunc) {
-		t.Errorf("expected error to be ErrNilWarnFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackWarnFunc) {
+		t.Errorf("expected error to be ErrNilCallbackWarnFunc, got %v", err)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestWithErrorCallback_NilOptions(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOpts) {
+	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
 		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
 	}
 }
@@ -179,8 +179,8 @@ func TestWithErrorCallback_NilFunc(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilErrorFunc) {
-		t.Errorf("expected error to be ErrNilErrorFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackErrorFunc) {
+		t.Errorf("expected error to be ErrNilCallbackErrorFunc, got %v", err)
 	}
 }
 
@@ -198,7 +198,7 @@ func TestWithErrorCallback_Success(t *testing.T) {
 }
 
 // TestNewCallbackLogger_NilLogger checks that NewCallbackLogger returns
-// ErrNilCallbackLogger error when passed nil logger.
+// ErrNilLogger error when passed nil logger.
 func TestNewCallbackLogger_NilLogger(t *testing.T) {
 	t.Parallel()
 
@@ -207,8 +207,12 @@ func TestNewCallbackLogger_NilLogger(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackLogger) {
-		t.Errorf("expected error to be ErrNilCallbackLogger, got %v", err)
+	if !errors.Is(err, decorator.ErrNilLogger) {
+		t.Errorf(
+			"unexpected error when creating CallbackLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			decorator.ErrNilLogger,
+		)
 	}
 }
 
@@ -222,7 +226,7 @@ func TestNewCallbackLogger_NilOption(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOpt) {
+	if !errors.Is(err, decorator.ErrNilCallbackOption) {
 		t.Errorf("expected error to be ErrNilCallbackOpt, got %v", err)
 	}
 }
@@ -239,8 +243,8 @@ func TestNewCallbackLogger_NilDebugCallback(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilDebugFunc) {
-		t.Errorf("expected error to be ErrNilDebugFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackDebugFunc) {
+		t.Errorf("expected error to be ErrNilCallbackDebugFunc, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "failed to apply option:") {
@@ -262,8 +266,8 @@ func TestNewCallbackLogger_NilInfoCallback(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilInfoFunc) {
-		t.Errorf("expected error to be ErrNilInfoFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackInfoFunc) {
+		t.Errorf("expected error to be ErrNilCallbackInfoFunc, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "failed to apply option:") {
@@ -285,8 +289,8 @@ func TestNewCallbackLogger_NilWarnCallback(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilWarnFunc) {
-		t.Errorf("expected error to be ErrNilWarnFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackWarnFunc) {
+		t.Errorf("expected error to be ErrNilCallbackWarnFunc, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "failed to apply option:") {
@@ -308,8 +312,8 @@ func TestNewCallbackLogger_NilErrorCallback(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilErrorFunc) {
-		t.Errorf("expected error to be ErrNilErrorFunc, got %v", err)
+	if !errors.Is(err, decorator.ErrNilCallbackErrorFunc) {
+		t.Errorf("expected error to be ErrNilCallbackErrorFunc, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "failed to apply option:") {
