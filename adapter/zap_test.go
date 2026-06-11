@@ -513,11 +513,11 @@ func TestNewZapLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when creating ZapLogger with nil logger, but got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilLogger) {
+	if !errors.Is(err, adapter.ErrNilZapLogger) {
 		t.Errorf(
 			"unexpected error when creating ZapLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilLogger,
+			adapter.ErrNilZapLogger,
 		)
 	}
 }

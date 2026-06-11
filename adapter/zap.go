@@ -2,11 +2,14 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/yuppyweb/cakelog"
 	"go.uber.org/zap"
 )
+
+var ErrNilZapLogger = errors.New("is nil zap logger")
 
 // ZapLogger is an adapter that allows using a zap.Logger as a cakelog.Logger.
 type ZapLogger struct {
@@ -20,7 +23,7 @@ type ZapLogger struct {
 // NewZapLogger creates a new ZapLogger that wraps the provided zap.Logger.
 func NewZapLogger(logger *zap.Logger, opts ...Option) (*ZapLogger, error) {
 	if logger == nil {
-		return nil, ErrNilLogger
+		return nil, ErrNilZapLogger
 	}
 
 	options := DefaultOptions()
@@ -38,22 +41,30 @@ func NewZapLogger(logger *zap.Logger, opts ...Option) (*ZapLogger, error) {
 	return &ZapLogger{log: logger, opt: options}, nil
 }
 
-// Debug sends a debug message to the underlying zap.Logger with the provided context and arguments.
+// Debug sends a debug message to the underlying zap.Logger with the provided arguments.
+// Note: context.Context is not used because zap.Logger does not have built-in context propagation
+// for standard logging methods (unlike slog). To use context with zap, configure a logger hook or middleware.
 func (zl *ZapLogger) Debug(_ context.Context, msg string, args ...any) {
 	zl.log.Debug(msg, zap.Any(zl.opt.argsKey, args))
 }
 
-// Info sends an info message to the underlying zap.Logger with the provided context and arguments.
+// Info sends an info message to the underlying zap.Logger with the provided arguments.
+// Note: context.Context is not used because zap.Logger does not have built-in context propagation
+// for standard logging methods (unlike slog). To use context with zap, configure a logger hook or middleware.
 func (zl *ZapLogger) Info(_ context.Context, msg string, args ...any) {
 	zl.log.Info(msg, zap.Any(zl.opt.argsKey, args))
 }
 
-// Warn sends a warning message to the underlying zap.Logger with the provided context and arguments.
+// Warn sends a warning message to the underlying zap.Logger with the provided arguments.
+// Note: context.Context is not used because zap.Logger does not have built-in context propagation
+// for standard logging methods (unlike slog). To use context with zap, configure a logger hook or middleware.
 func (zl *ZapLogger) Warn(_ context.Context, msg string, args ...any) {
 	zl.log.Warn(msg, zap.Any(zl.opt.argsKey, args))
 }
 
-// Error sends an error message to the underlying zap.Logger with the provided context, error, and arguments.
+// Error sends an error message to the underlying zap.Logger with the provided error and arguments.
+// Note: context.Context is not used because zap.Logger does not have built-in context propagation
+// for standard logging methods (unlike slog). To use context with zap, configure a logger hook or middleware.
 func (zl *ZapLogger) Error(_ context.Context, err error, args ...any) {
 	zl.log.Error(err.Error(), zap.Any(zl.opt.argsKey, args))
 }

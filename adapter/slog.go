@@ -2,11 +2,14 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
 	"github.com/yuppyweb/cakelog"
 )
+
+var ErrNilSlogLogger = errors.New("is nil slog logger")
 
 // SlogLogger is an adapter that allows using a slog.Logger as a cakelog.Logger.
 type SlogLogger struct {
@@ -20,7 +23,7 @@ type SlogLogger struct {
 // NewSlogLogger creates a new SlogLogger that wraps the provided slog.Logger.
 func NewSlogLogger(logger *slog.Logger, opts ...Option) (*SlogLogger, error) {
 	if logger == nil {
-		return nil, ErrNilLogger
+		return nil, ErrNilSlogLogger
 	}
 
 	options := DefaultOptions()

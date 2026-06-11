@@ -264,11 +264,11 @@ func TestNewZerologLogger_WithNilLogger(t *testing.T) {
 		t.Fatal("expected error when providing nil logger, got nil")
 	}
 
-	if !errors.Is(err, adapter.ErrNilLogger) {
+	if !errors.Is(err, adapter.ErrNilZerologLogger) {
 		t.Errorf(
 			"unexpected error when creating ZerologLogger with nil logger:\nGot:  %v\nWant: %v",
 			err,
-			adapter.ErrNilLogger,
+			adapter.ErrNilZerologLogger,
 		)
 	}
 }
