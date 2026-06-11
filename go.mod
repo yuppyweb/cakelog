@@ -1,6 +1,6 @@
 module github.com/yuppyweb/cakelog
 
-go 1.26.3
+go 1.26.4
 
 tool (
 	github.com/go-task/task/v3/cmd/task
@@ -9,7 +9,6 @@ tool (
 )
 
 require (
-	github.com/getsentry/sentry-go v0.46.2
 	github.com/rs/zerolog v1.35.1
 	github.com/sirupsen/logrus v1.9.4
 	go.uber.org/zap v1.28.0
