@@ -150,26 +150,26 @@ func NewCallbackLogger(log cakelog.Logger, opts ...CallbackOption) (*CallbackLog
 
 // Debug logs a debug message and calls the debug callback function.
 func (cl *CallbackLogger) Debug(ctx context.Context, msg string, args ...any) {
+	defer cl.opt.debugFunc(ctx)
 	cl.log.Debug(ctx, msg, args...)
-	cl.opt.debugFunc(ctx)
 }
 
 // Info logs an info message and calls the info callback function.
 func (cl *CallbackLogger) Info(ctx context.Context, msg string, args ...any) {
+	defer cl.opt.infoFunc(ctx)
 	cl.log.Info(ctx, msg, args...)
-	cl.opt.infoFunc(ctx)
 }
 
 // Warn logs a warning message and calls the warn callback function.
 func (cl *CallbackLogger) Warn(ctx context.Context, msg string, args ...any) {
+	defer cl.opt.warnFunc(ctx)
 	cl.log.Warn(ctx, msg, args...)
-	cl.opt.warnFunc(ctx)
 }
 
 // Error logs an error and calls the error callback function.
 func (cl *CallbackLogger) Error(ctx context.Context, err error, args ...any) {
+	defer cl.opt.errorFunc(ctx)
 	cl.log.Error(ctx, err, args...)
-	cl.opt.errorFunc(ctx)
 }
 
 // Ensure CallbackLogger implements the cakelog.Logger interface.
