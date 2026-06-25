@@ -8,14 +8,104 @@ import (
 	"github.com/yuppyweb/cakelog/decorator"
 )
 
+// TestWithContextValue tests that WithContextValue correctly stores and retrieves values
+// in context chains, ensuring that each context level maintains its own values and
+// can access values from parent contexts.
+func TestWithContextValue(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	ctx1 := decorator.WithContextValue(ctx, "key1", "value1")
+	ctx2 := decorator.WithContextValue(ctx1, "key2", "value2")
+
+	if val := decorator.ContextValue(ctx, "key1"); val != nil {
+		t.Errorf("Expected base context to not contain key 'key1'")
+	}
+
+	if val := decorator.ContextValue(ctx, "key2"); val != nil {
+		t.Errorf("Expected base context to not contain key 'key2'")
+	}
+
+	if val := decorator.ContextValue(ctx1, "key1"); val != "value1" {
+		t.Errorf("Expected context value for 'key1' to be 'value1', got '%v'", val)
+	}
+
+	if val := decorator.ContextValue(ctx1, "key2"); val != nil {
+		t.Errorf("Expected context to not contain key 'key2'")
+	}
+
+	if val := decorator.ContextValue(ctx2, "key1"); val != "value1" {
+		t.Errorf("Expected context value for 'key1' to be 'value1', got '%v'", val)
+	}
+
+	if val := decorator.ContextValue(ctx2, "key2"); val != "value2" {
+		t.Errorf("Expected context value for 'key2' to be 'value2', got '%v'", val)
+	}
+}
+
+// TestContextValue_EmptyContextKey tests that ContextValue returns nil when querying
+// with an empty string key.
+func TestContextValue_EmptyContextKey(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	if val := decorator.ContextValue(ctx, ""); val != nil {
+		t.Errorf("Expected context to not contain empty string key")
+	}
+}
+
+// TestContextValue_NonExistentKey tests that ContextValue correctly retrieves existing keys
+// and returns nil for keys that do not exist in the context.
+func TestContextValue_NonExistentKey(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	ctx = decorator.WithContextValue(ctx, "existingKey", "value")
+
+	if val := decorator.ContextValue(ctx, "existingKey"); val != "value" {
+		t.Errorf("Expected context value for 'existingKey' to be 'value', got '%v'", val)
+	}
+
+	if val := decorator.ContextValue(ctx, "nonExistentKey"); val != nil {
+		t.Errorf("Expected context to not contain key 'nonExistentKey'")
+	}
+}
+
+// TestNewContextLogger_NilLogger tests that NewContextLogger returns an error of type
+// ErrNilLogger when provided with a nil logger.
+func TestNewContextLogger_NilLogger(t *testing.T) {
+	t.Parallel()
+
+	_, err := decorator.NewContextLogger(nil)
+	if err == nil {
+		t.Fatal("expected error when providing nil logger, got nil")
+	}
+
+	if !errors.Is(err, decorator.ErrNilLogger) {
+		t.Errorf(
+			"unexpected error when creating ContextLogger with nil logger:\nGot:  %v\nWant: %v",
+			err,
+			decorator.ErrNilLogger,
+		)
+	}
+}
+
+// TestContextLogger_Debug tests that the ContextLogger's Debug method correctly passes
+// the debug message and arguments to the underlying logger, and includes context values
+// in the arguments.
 func TestContextLogger_Debug(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
-	ctx := logger.PutContext(context.Background(), "userID", 123)
+	ctx := decorator.WithContextValue(context.Background(), "userID", 123)
 
 	logger.Debug(ctx, "debug message", "debug", 42)
 
@@ -51,7 +141,7 @@ func TestContextLogger_Debug(t *testing.T) {
 		)
 	}
 
-	ctxValue, ok := mockLogger.debugIn[0].args[2].(map[any]any)
+	ctxValue, ok := mockLogger.debugIn[0].args[2].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected third argument to be a map[string]any, got '%T'",
@@ -72,14 +162,20 @@ func TestContextLogger_Debug(t *testing.T) {
 	}
 }
 
+// TestContextLogger_Info tests that the ContextLogger's Info method correctly passes
+// the info message and arguments to the underlying logger, and includes context values
+// in the arguments.
 func TestContextLogger_Info(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
-	ctx := logger.PutContext(context.Background(), "requestID", "abc-123")
+	ctx := decorator.WithContextValue(context.Background(), "requestID", "abc-123")
 
 	logger.Info(ctx, "info message", "info", 75)
 
@@ -115,7 +211,7 @@ func TestContextLogger_Info(t *testing.T) {
 		)
 	}
 
-	ctxValue, ok := mockLogger.infoIn[0].args[2].(map[any]any)
+	ctxValue, ok := mockLogger.infoIn[0].args[2].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected third argument to be a map[string]any, got '%T'",
@@ -136,14 +232,20 @@ func TestContextLogger_Info(t *testing.T) {
 	}
 }
 
+// TestContextLogger_Warn tests that the ContextLogger's Warn method correctly passes
+// the warn message and arguments to the underlying logger, and includes context values
+// in the arguments.
 func TestContextLogger_Warn(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
-	ctx := logger.PutContext(context.Background(), "sessionID", "xyz-789")
+	ctx := decorator.WithContextValue(context.Background(), "sessionID", "xyz-789")
 
 	logger.Warn(ctx, "warn message", "warn", 88)
 
@@ -179,7 +281,7 @@ func TestContextLogger_Warn(t *testing.T) {
 		)
 	}
 
-	ctxValue, ok := mockLogger.warnIn[0].args[2].(map[any]any)
+	ctxValue, ok := mockLogger.warnIn[0].args[2].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected third argument to be a map[string]any, got '%T'",
@@ -200,14 +302,20 @@ func TestContextLogger_Warn(t *testing.T) {
 	}
 }
 
+// TestContextLogger_Error tests that the ContextLogger's Error method correctly passes
+// the error and arguments to the underlying logger, and includes context values
+// in the arguments.
 func TestContextLogger_Error(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
-	ctx := logger.PutContext(context.Background(), "transactionID", "txn-456")
+	ctx := decorator.WithContextValue(context.Background(), "transactionID", "txn-456")
 
 	expectedErr := errors.New("error message")
 	logger.Error(ctx, expectedErr, "error", 90)
@@ -245,7 +353,7 @@ func TestContextLogger_Error(t *testing.T) {
 		)
 	}
 
-	ctxValue, ok := mockLogger.errorIn[0].args[2].(map[any]any)
+	ctxValue, ok := mockLogger.errorIn[0].args[2].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected third argument to be a map[string]any, got '%T'",
@@ -266,13 +374,19 @@ func TestContextLogger_Error(t *testing.T) {
 	}
 }
 
+// TestContextLogger_WithEmptyContext tests that all ContextLogger methods work correctly
+// when called with an empty context, passing arguments to the underlying logger without
+// any context values.
 func TestContextLogger_WithEmptyContext(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 	expectedErr := errors.New("error message")
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
 	logger.Debug(context.Background(), "debug message")
 	logger.Info(context.Background(), "info message")
@@ -352,19 +466,25 @@ func TestContextLogger_WithEmptyContext(t *testing.T) {
 	}
 }
 
+// TestContextLogger_ImmutableContext tests that the ContextLogger correctly handles
+// immutable context chains, ensuring that each logging call receives the correct set of
+// context values at each level of the context hierarchy.
 func TestContextLogger_ImmutableContext(t *testing.T) {
 	t.Parallel()
 
 	mockLogger := new(mockLogger)
 
-	logger := decorator.NewContextLogger(mockLogger)
+	logger, err := decorator.NewContextLogger(mockLogger)
+	if err != nil {
+		t.Fatalf("failed to create ContextLogger: %v", err)
+	}
 
 	ctx0 := context.Background()
 
-	ctx1 := logger.PutContext(ctx0, "key1", "value1")
-	ctx2 := logger.PutContext(ctx1, "key2", "value2")
-	ctx3 := logger.PutContext(ctx2, "key3", "value3")
-	ctx4 := logger.PutContext(ctx3, "key4", "value4")
+	ctx1 := decorator.WithContextValue(ctx0, "key1", "value1")
+	ctx2 := decorator.WithContextValue(ctx1, "key2", "value2")
+	ctx3 := decorator.WithContextValue(ctx2, "key3", "value3")
+	ctx4 := decorator.WithContextValue(ctx3, "key4", "value4")
 
 	logger.Debug(ctx1, "")
 	logger.Info(ctx2, "")
@@ -415,7 +535,7 @@ func TestContextLogger_ImmutableContext(t *testing.T) {
 		)
 	}
 
-	ctxValue1, ok := mockLogger.debugIn[0].args[0].(map[any]any)
+	ctxValue1, ok := mockLogger.debugIn[0].args[0].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected Debug argument to be a map[string]any, got '%T'",
@@ -425,12 +545,12 @@ func TestContextLogger_ImmutableContext(t *testing.T) {
 
 	if len(ctxValue1) != 1 || ctxValue1["key1"] != "value1" {
 		t.Errorf(
-			"Expected Debug context to be map[any]any{\"key1\": \"value1\"}, got '%v'",
+			"Expected Debug context to be map[string]any{\"key1\": \"value1\"}, got '%v'",
 			ctxValue1,
 		)
 	}
 
-	ctxValue2, ok := mockLogger.infoIn[0].args[0].(map[any]any)
+	ctxValue2, ok := mockLogger.infoIn[0].args[0].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected Info argument to be a map[string]any, got '%T'",
@@ -440,12 +560,12 @@ func TestContextLogger_ImmutableContext(t *testing.T) {
 
 	if len(ctxValue2) != 2 || ctxValue2["key1"] != "value1" || ctxValue2["key2"] != "value2" {
 		t.Errorf(
-			"Expected Info context to be map[any]any{\"key1\": \"value1\", \"key2\": \"value2\"}, got '%v'",
+			"Expected Info context to be map[string]any{\"key1\": \"value1\", \"key2\": \"value2\"}, got '%v'",
 			ctxValue2,
 		)
 	}
 
-	ctxValue3, ok := mockLogger.warnIn[0].args[0].(map[any]any)
+	ctxValue3, ok := mockLogger.warnIn[0].args[0].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected Warn argument to be a map[string]any, got '%T'",
@@ -458,13 +578,13 @@ func TestContextLogger_ImmutableContext(t *testing.T) {
 		ctxValue3["key2"] != "value2" ||
 		ctxValue3["key3"] != "value3" {
 		t.Errorf(
-			"Expected Warn context to be map[any]any{\"key1\": \"value1\", "+
+			"Expected Warn context to be map[string]any{\"key1\": \"value1\", "+
 				"\"key2\": \"value2\", \"key3\": \"value3\"}, got '%v'",
 			ctxValue3,
 		)
 	}
 
-	ctxValue4, ok := mockLogger.errorIn[0].args[0].(map[any]any)
+	ctxValue4, ok := mockLogger.errorIn[0].args[0].(map[string]any)
 	if !ok {
 		t.Fatalf(
 			"Expected Error argument to be a map[string]any, got '%T'",
@@ -478,7 +598,7 @@ func TestContextLogger_ImmutableContext(t *testing.T) {
 		ctxValue4["key3"] != "value3" ||
 		ctxValue4["key4"] != "value4" {
 		t.Errorf(
-			"Expected Error context to be map[any]any{\"key1\": \"value1\", "+
+			"Expected Error context to be map[string]any{\"key1\": \"value1\", "+
 				"\"key2\": \"value2\", \"key3\": \"value3\", \"key4\": \"value4\"}, got '%v'",
 			ctxValue4,
 		)

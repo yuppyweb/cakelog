@@ -1,323 +1,314 @@
 # 🍰 Cakelog
 
-**Cakelog** is a flexible Go logging library that provides a unified logger interface with support for many popular logging frameworks through adapters and extensible functionality through decorators.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/yuppyweb/cakelog)](https://github.com/yuppyweb/cakelog)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yuppyweb/cakelog)](https://goreportcard.com/report/github.com/yuppyweb/cakelog)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+**Cakelog** is a flexible Go logging library that provides a unified logger interface with support for multiple popular logging frameworks (Logrus, Slog, Zap, Zerolog) through adapters and extensible functionality through decorators.
+
+## ✨ Features
+
+✅ **Unified Logger Interface** — Write code once, switch loggers anytime  
+✅ **Multiple Adapters** — Logrus, Slog, Zap, Zerolog support  
+✅ **Extensible Decorators** — Context enrichment, Callback hooks, Data masking  
+✅ **Context-Based Enrichment** — Pass metadata through context values  
+✅ **Callback Hooks** — Execute custom logic on log events  
+✅ **Data Masking** — Automatically mask sensitive information  
+✅ **Composable Pattern** — Chain decorators for advanced functionality  
+✅ **NopLogger for Testing** — Built-in no-op implementation 
 
 ## 🎯 Core Idea
 
-Cakelog solves the problem of binding code to a specific logging library. Instead of using one logger directly, you work with a unified `Logger` interface that can be adapted to any popular logger or combine multiple loggers simultaneously through decorators.
+Cakelog solves the problem of binding code to a specific logging library. Instead of depending on one logger directly, you work with a unified `Logger` interface that can be adapted to any popular logger or combine multiple loggers simultaneously through decorators.
 
 ```
-┌─────────────────────────────┐
-│     Your Application        │
-└────────────┬────────────────┘
-             │
-             ▼
-     ┌───────────────┐
-     │ cakelog.Logger│  ◄───── Unified Interface
-     └───────┬───────┘
-             │
-    ┌────────┴────────┬──────────┬────────────┐
-    ▼                 ▼          ▼            ▼
- Adapters:      Logrus       Slog       Zap       Zerolog
-    │
- Decorators: Context  Prometheus  Sentry
+┌─ Your Application
+│
+├─ cakelog.Logger ◄──── Unified Interface
+│
+├─ Adapters (choose one):
+│  • Logrus
+│  • Slog (Go 1.21+)
+│  • Zap
+│  • Zerolog
+│
+└─ Decorators (stack as needed):
+   • Context (enrichment)
+   • Callback (hooks)
+   • Mask (sanitization)
 ```
 
-## 📦 Logger Interface
+---
+
+## 📦 Installation
+
+```bash
+go get github.com/yuppyweb/cakelog
+```
+
+Install adapters as needed:
+
+```bash
+go get github.com/sirupsen/logrus     # For Logrus adapter
+go get github.com/rs/zerolog          # For Zerolog adapter
+go get go.uber.org/zap                # For Zap adapter
+# Slog is built-in to Go 1.21+
+```
+
+## 🚀 Quick Start
+
+### Basic Usage with Slog 📚
+
+```go
+package main
+
+import (
+    "context"
+    "log/slog"
+    "os"
+    "github.com/yuppyweb/cakelog/adapter"
+)
+
+func main() {
+    // Create base logger
+    slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+    logger, _ := adapter.NewSlogLogger(slogLogger)
+    
+    ctx := context.Background()
+    
+    // Use logger
+    logger.Info(ctx, "Application started")
+    logger.Debug(ctx, "Debug message")
+    logger.Warn(ctx, "Warning message")
+    logger.Error(ctx, errors.New("connection failed"))
+}
+```
+
+## 📖 Core Components
+
+### Logger Interface 📋
 
 The main interface contains four logging methods:
 
 ```go
 type Logger interface {
+    // Debug logs a debug-level message
     Debug(ctx context.Context, msg string, args ...any)
+    // Info logs an info-level message
     Info(ctx context.Context, msg string, args ...any)
+    // Warn logs a warning-level message
     Warn(ctx context.Context, msg string, args ...any)
+    // Error logs an error-level message with an error value
     Error(ctx context.Context, err error, args ...any)
 }
 ```
 
-All methods:
-- ✅ Accept `context.Context` for passing values between components
-- ✅ Support variable number of arguments for additional information
-- ✅ Work with async operation context
+### NopLogger 🚫
 
----
+Built-in no-operation logger for testing:
+
+```go
+logger := cakelog.NewNopLogger() // discards all log messages
+logger.Info(ctx, "This won't be logged")
+```
 
 ## 🔌 Adapters
 
-Adapters allow you to use popular logging libraries as `cakelog.Logger`.
+Cakelog provides adapters for the most popular Go logging frameworks:
 
-### 📊 Logrus Adapter
-
-An adapter for [sirupsen/logrus](https://github.com/sirupsen/logrus) — one of the most popular loggers in Go.
+### Slog Adapter (Go 1.21+) 🔮
 
 ```go
 import (
-    "context"
-    "github.com/sirupsen/logrus"
-    "github.com/yuppyweb/cakelog/adapter"
-)
-
-func main() {
-    logrusLogger := logrus.New()
-    logger := adapter.NewLogrusLogger(logrusLogger)
-    
-    ctx := context.Background()
-    logger.Info(ctx, "Application started", map[string]any{"version": "1.0", "environment": "prod"})
-}
-```
-
-**Features:**
-- Context support via `WithContext()`
-- Arguments stored in `context` field (by default)
-- Flexible `ArgsKey` parameter for field name customization
-
-```go
-logger := adapter.NewLogrusLogger(logrusLogger)
-logger.ArgsKey = "metadata"  // Change the key for arguments
-```
-
----
-
-### 🔮 Slog Adapter
-
-An adapter for the built-in [log/slog](https://pkg.go.dev/log/slog) (available from Go 1.21+).
-
-```go
-import (
-    "context"
     "log/slog"
     "github.com/yuppyweb/cakelog/adapter"
 )
 
-func main() {
-    slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-    logger := adapter.NewSlogLogger(slogLogger)
-    
-    ctx := context.Background()
-    logger.Error(ctx, errors.New("database error"), map[string]any{"query": "SELECT * FROM users"})
+slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+logger, err := adapter.NewSlogLogger(slogLogger)
+if err != nil {
+    log.Fatal(err)
 }
 ```
 
-**Features:**
-- Built into the standard library
-- Structured logging in JSON/Text format
-- Full context support via `*Context` methods
-
----
-
-### ⚡ Zap Adapter
-
-An adapter for [Uber's Zap](https://github.com/uber-go/zap) — a high-performance logger.
+### Zap Adapter ⚡
 
 ```go
 import (
-    "context"
-    "github.com/yuppyweb/cakelog/adapter"
     "go.uber.org/zap"
+    "github.com/yuppyweb/cakelog/adapter"
 )
 
-func main() {
-    zapLogger, _ := zap.NewProduction()
-    defer zapLogger.Sync()
-    
-    logger := adapter.NewZapLogger(zapLogger)
-    
-    ctx := context.Background()
-    logger.Warn(ctx, "High memory usage", map[string]any{"usage": "85%", "threshold": "80%"})
+zapLogger, _ := zap.NewProduction()
+logger, err := adapter.NewZapLogger(zapLogger)
+if err != nil {
+    log.Fatal(err)
 }
 ```
 
-**Features:**
-- Extremely fast logging
-- Minimal data copying
-- Optimal for high-load applications
-
----
-
-### 📬 Zerolog Adapter
-
-An adapter for [rs/zerolog](https://github.com/rs/zerolog) — a reflection-free logger.
+### Logrus Adapter 📊
 
 ```go
 import (
-    "context"
+    "github.com/sirupsen/logrus"
+    "github.com/yuppyweb/cakelog/adapter"
+)
+
+logrusLogger := logrus.New()
+logger, err := adapter.NewLogrusLogger(logrusLogger)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Zerolog Adapter 📬
+
+```go
+import (
     "github.com/rs/zerolog"
     "github.com/yuppyweb/cakelog/adapter"
 )
 
-func main() {
-    zerologLogger := zerolog.New(os.Stdout)
-    logger := adapter.NewZerologLogger(&zerologLogger)
-    
-    ctx := context.Background()
-    logger.Debug(ctx, "Sending request", map[string]any{"url": "https://api.example.com", "timeout": "30s"})
+zerologLogger := zerolog.New(os.Stdout)
+logger, err := adapter.NewZerologLogger(zerologLogger)
+if err != nil {
+    log.Fatal(err)
 }
 ```
 
-**Features:**
-- Minimalist and fast
-- Good balance between performance and functionality
-- Without reflection usage
+### Custom Args Key ⚙️
 
----
+All adapters support customizing the key under which arguments are stored:
+
+```go
+logger, err := adapter.NewSlogLogger(slogLogger, adapter.WithArgsKey("fields"))
+```
 
 ## 🎨 Decorators
 
-Decorators extend logger functionality by wrapping an existing `cakelog.Logger`.
+Decorators allow you to enhance logger functionality:
 
-### 🎁 Context Decorator
+### Context Decorator (Enrichment) 🎁
 
-Enriches logs with values stored in the context. Allows passing data between functions through context.
+Add metadata to all logs automatically using context values:
 
 ```go
 import (
-    "context"
     "github.com/yuppyweb/cakelog/decorator"
-    "github.com/yuppyweb/cakelog/adapter"
 )
 
-func processOrder(ctx context.Context, logger cakelog.Logger) {
-    // Create context logger
-    ctxLogger := decorator.NewContextLogger(logger)
-    
-    // Add values to context
-    ctx = ctxLogger.PutContext(ctx, "order_id", "12345")
-    ctx = ctxLogger.PutContext(ctx, "user_id", "user_789")
-    
-    // These values will be automatically added to all logs
-    ctxLogger.Info(ctx, "Processing order")
-    // Output: Info: Processing order order_id=12345 user_id=user_789
-    
-    processPayment(ctx, ctxLogger)
-}
+// Add values to context
+ctx := decorator.WithContextValue(context.Background(), "user_id", "user123")
+ctx = decorator.WithContextValue(ctx, "request_id", "req456")
 
-func processPayment(ctx context.Context, logger cakelog.Logger) {
-    // Context values are still available!
-    logger.Info(ctx, "Payment processed")
-    // Output: Info: Payment processed order_id=12345 user_id=user_789
-}
+// Get all stored values
+values := decorator.ContextValues(ctx)
+// values: {"user_id": "user123", "request_id": "req456"}
+
+// Get single value
+userID := decorator.ContextValue(ctx, "user_id")
 ```
 
-**Use cases:**
-- Tracking request ID (request ID) through the entire call chain
-- Preserving user information for log correlation
-- Passing context between goroutines
+### Callback Decorator (Hooks) ↩️
 
----
-
-### 📈 Prometheus Decorator
-
-Tracks the number of logs at each level using Prometheus metrics.
+Execute custom logic on each log event:
 
 ```go
 import (
-    "context"
-    "github.com/prometheus/client_golang/prometheus"
     "github.com/yuppyweb/cakelog/decorator"
-    "github.com/yuppyweb/cakelog/adapter"
 )
 
-func setupLogger(baseLogger cakelog.Logger) cakelog.Logger {
-    // Create counters for each logging level
-    counters := decorator.PrometheusLoggerCounter{
-        Debug: prometheus.NewCounter(prometheus.CounterOpts{
-            Name: "logs_debug_total",
-            Help: "Total debug logs",
-        }),
-        Info: prometheus.NewCounter(prometheus.CounterOpts{
-            Name: "logs_info_total",
-            Help: "Total info logs",
-        }),
-        Warn: prometheus.NewCounter(prometheus.CounterOpts{
-            Name: "logs_warn_total",
-            Help: "Total warning logs",
-        }),
-        Error: prometheus.NewCounter(prometheus.CounterOpts{
-            Name: "logs_error_total",
-            Help: "Total error logs",
-        }),
+// Define callbacks
+debugCallback := func(ctx context.Context) { /* track debug events */ }
+errorCallback := func(ctx context.Context) { /* alert on errors */ }
+
+// Create callback logger
+callbackLogger, err := decorator.NewCallbackLogger(
+    baseLogger,
+    decorator.WithDebugCallback(debugCallback),
+    decorator.WithErrorCallback(errorCallback),
+)
+```
+
+### Mask Decorator (Sanitization) 🎭
+
+Mask sensitive data in all logs:
+
+```go
+import (
+    "github.com/yuppyweb/cakelog/decorator"
+)
+
+// Define masker rules
+type MyMasker struct{}
+
+func (m MyMasker) MaskMessage(msg string) string {
+    return strings.ReplaceAll(msg, "password", "***")
+}
+
+func (m MyMasker) MaskError(err error) error {
+    return errors.New(strings.ReplaceAll(err.Error(), "secret", "***"))
+}
+
+func (m MyMasker) MaskArgument(arg any) any {
+    if str, ok := arg.(string); ok {
+        return strings.ReplaceAll(str, "token", "xxx")
     }
+    return arg
+}
+
+// Create mask logger
+maskLogger, err := decorator.NewMaskLogger(baseLogger, MyMasker{})
+```
+
+### Composing Decorators 🧩
+
+Stack multiple decorators together:
+
+```go
+baseLogger, _ := adapter.NewSlogLogger(slogLogger)
+callbackLogger, _ := decorator.NewCallbackLogger(baseLogger, opts...)
+maskLogger, _ := decorator.NewMaskLogger(callbackLogger, masker)
+
+// Now maskLogger has both callback and masking capabilities
+```
+
+## 📝 Examples
+
+### Real-World Example: Service with Context Enrichment 🏗️
+
+```go
+package main
+
+import (
+    "context"
+    "log/slog"
+    "os"
+    "github.com/yuppyweb/cakelog/adapter"
+    "github.com/yuppyweb/cakelog/decorator"
+)
+
+func processRequest(logger cakelog.Logger, requestID string, userID string) {
+    // Enrich context with request metadata
+    ctx := decorator.WithContextValue(context.Background(), "request_id", requestID)
+    ctx = decorator.WithContextValue(ctx, "user_id", userID)
     
-    // Register counters
-    prometheus.MustRegister(counters.Debug, counters.Info, counters.Warn, counters.Error)
+    logger.Info(ctx, "Request processing started")
     
-    // Wrap logger in Prometheus decorator
-    return decorator.NewPrometheusLogger(baseLogger, counters)
+    // ... do work ...
+    
+    logger.Info(ctx, "Request processing completed")
 }
 
 func main() {
-    logger := setupLogger(adapter.NewSlogLogger(slog.Default()))
-    ctx := context.Background()
+    slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+    logger, _ := adapter.NewSlogLogger(slogLogger)
     
-    logger.Info(ctx, "Server started")
-    logger.Warn(ctx, "Low memory")
-    logger.Error(ctx, errors.New("connection error"))
-    
-    // Metrics in Prometheus:
-    // logs_info_total 1
-    // logs_warn_total 1
-    // logs_error_total 1
+    processRequest(logger, "req-123", "user-456")
 }
 ```
 
-**Benefits:**
-- 🔍 Monitoring log frequency
-- 📊 Problem detection through anomalies
-- 🚨 Setting up alerts based on error count
-
----
-
-### 🔴 Sentry Decorator
-
-Integrates [Sentry](https://sentry.io) for error tracking and events in production.
-
-```go
-import (
-    "context"
-    "github.com/getsentry/sentry-go"
-    "github.com/yuppyweb/cakelog/decorator"
-    "github.com/yuppyweb/cakelog/adapter"
-)
-
-func setupLogger(baseLogger cakelog.Logger) cakelog.Logger {
-    // Initialize Sentry
-    sentry.Init(sentry.ClientOptions{
-        Dsn: "https://your-key@sentry.io/your-project-id",
-    })
-    
-    // Create Sentry hubs for each level (optional)
-    hubs := decorator.SentryLoggerHub{
-        Debug: sentry.CurrentHub(),
-        Info:  sentry.CurrentHub(),
-        Warn:  sentry.CurrentHub(),
-        Error: sentry.CurrentHub(),
-    }
-    
-    return decorator.NewSentryLogger(baseLogger, hubs)
-}
-
-func main() {
-    logger := setupLogger(adapter.NewSlogLogger(slog.Default()))
-    ctx := context.Background()
-    
-    // Will be sent to Sentry and to the base logger
-    logger.Error(ctx, errors.New("DB connection expired"), map[string]any{"database": "postgres"})
-    
-    // Output in logs:
-    // Error: DB connection expired sentryEventId=<uuid>
-}
-```
-
-**Capabilities:**
-- 🎯 Automatic exception capturing
-- 🏷️ Tags and context for each event
-- 🔄 Deduplication of similar errors
-- 📧 Alerts on critical errors
-
----
-
-## 🧩 Combining Adapters and Decorators
+### Combining Adapters and Decorators 🧩
 
 The main advantage of Cakelog is the ability to combine components:
 
@@ -325,140 +316,135 @@ The main advantage of Cakelog is the ability to combine components:
 import (
     "context"
     "log/slog"
-    "github.com/prometheus/client_golang/prometheus"
-    "github.com/getsentry/sentry-go"
+    "os"
     "github.com/yuppyweb/cakelog"
     "github.com/yuppyweb/cakelog/adapter"
     "github.com/yuppyweb/cakelog/decorator"
 )
 
-func setupProductionLogger() cakelog.Logger {
-    // 1 Create base logger through adapter
+func setupProductionLogger() (cakelog.Logger, error) {
+    // 1. Create base logger through adapter
     slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-    baseLogger := adapter.NewSlogLogger(slogLogger)
-    
-    // 2 Add context enrichment
-    ctxLogger := decorator.NewContextLogger(baseLogger)
-    
-    // 3 Add Prometheus metrics
-    promountCounters := decorator.PrometheusLoggerCounter{
-        Debug: /* ... */,
-        Info:  /* ... */,
-        // ...
+    baseLogger, err := adapter.NewSlogLogger(slogLogger)
+    if err != nil {
+        return nil, err
     }
-    promLogger := decorator.NewPrometheusLogger(ctxLogger, promountCounters)
     
-    // 4 Add Sentry integration
-    sentryHubs := decorator.SentryLoggerHub{
-        Debug: sentry.CurrentHub(),
-        Info:  sentry.CurrentHub(),
-        Warn:  sentry.CurrentHub(),
-        Error: sentry.CurrentHub(),
+    // 2. Add callback hooks
+    callbackLogger, err := decorator.NewCallbackLogger(
+        baseLogger,
+        decorator.WithErrorCallback(func(ctx context.Context) {
+            // Trigger alert on error
+            println("ERROR LOGGED!")
+        }),
+    )
+    if err != nil {
+        return nil, err
     }
-    finalLogger := decorator.NewSentryLogger(promLogger, sentryHubs)
     
-    return finalLogger
+    return callbackLogger, nil
 }
 
 func main() {
-    logger := setupProductionLogger()
+    logger, _ := setupProductionLogger()
     ctx := context.Background()
     
-    // Processing chain:
-    // logger.Info() 
-    //   → Sentry will capture (if configured)
-    //   → Prometheus counter increases
-    //   → Context will be added
-    //   → Slog outputs JSON
+    // Add context values
+    ctx = decorator.WithContextValue(ctx, "request_id", "req_12345")
+    ctx = decorator.WithContextValue(ctx, "user_id", "user_789")
     
-    logger.Info(ctx, "Server ready", map[string]any{"port": 8080})
+    // Log with enriched context
+    logger.Info(ctx, "Server ready")
 }
-```
 
----
-
-## 📋 NopLogger
-
-Built-in logger that does nothing. Useful in tests or to disable logging:
+### Microservice with Context Tracking 🔗
 
 ```go
-import "github.com/yuppyweb/cakelog"
+import (
+    "context"
+    "github.com/yuppyweb/cakelog/decorator"
+)
 
-func main() {
-    nopLogger := cakelog.NewNopLogger()
-    
-    // All calls will be ignored
-    nopLogger.Info(context.Background(), "This will not be logged")
-}
-```
-
----
-
-## 🚀 Installation
-
-```bash
-go get github.com/yuppyweb/cakelog
-```
-
-Then install the needed adapters:
-
-```bash
-go get github.com/sirupsen/logrus          # For Logrus
-go get github.com/rs/zerolog               # For Zerolog
-go get go.uber.org/zap                     # For Zap
-go get github.com/prometheus/client_golang # For Prometheus
-go get github.com/getsentry/sentry-go      # For Sentry
-```
-
----
-
-## 💡 Usage Examples
-
-### Example 1: Microservice with Context Tracking
-
-```go
 func handleUserRequest(ctx context.Context, userID string, logger cakelog.Logger) {
-    ctxLogger := decorator.NewContextLogger(logger)
-    ctx = ctxLogger.PutContext(ctx, "user_id", userID)
-    ctx = ctxLogger.PutContext(ctx, "request_id", generateRequestID())
+    // Add correlation values to context
+    ctx = decorator.WithContextValue(ctx, "user_id", userID)
+    ctx = decorator.WithContextValue(ctx, "request_id", generateRequestID())
     
-    ctxLogger.Info(ctx, "User request received")
+    logger.Info(ctx, "User request received")
     
-    user, err := fetchUser(ctx, ctxLogger)
+    user, err := fetchUser(ctx, logger)
     if err != nil {
-        ctxLogger.Error(ctx, err, map[string]any{"action": "fetch_user"})
+        logger.Error(ctx, err, map[string]any{"action": "fetch_user"})
         return
     }
     
-    ctxLogger.Info(ctx, "User loaded", map[string]any{"name": user.Name})
+    logger.Info(ctx, "User loaded", map[string]any{"name": user.Name})
 }
 ```
 
-### Example 2: Using Different Loggers for Different Scenarios
+### Masking Sensitive Data 🔐
 
 ```go
-// For development
-func devLogger() cakelog.Logger {
-    slogLogger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-    return adapter.NewSlogLogger(slogLogger)
+import (
+    "regexp"
+    "github.com/yuppyweb/cakelog/decorator"
+    "github.com/yuppyweb/cakelog/adapter"
+)
+
+type PatternMasker struct {
+    pattern *regexp.Regexp
+    replace string
 }
 
-// For production
-func prodLogger() cakelog.Logger {
-    slogLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-    baseLogger := adapter.NewSlogLogger(slogLogger)
-    return decorator.NewSentryLogger(baseLogger, /* ... */)
+func (pm *PatternMasker) MaskMessage(msg string) string {
+    return pm.pattern.ReplaceAllString(msg, pm.replace)
 }
 
-func main() {
-    var logger cakelog.Logger
-    if os.Getenv("ENV") == "production" {
-        logger = prodLogger()
-    } else {
-        logger = devLogger()
+func (pm *PatternMasker) MaskError(err error) error {
+    return err
+}
+
+func (pm *PatternMasker) MaskArgument(arg any) any {
+    return arg
+}
+
+func setupSecureLogger(baseLogger cakelog.Logger) (cakelog.Logger, error) {
+    maskers := []decorator.Masker{
+        &PatternMasker{
+            pattern: regexp.MustCompile(`\d{4}-\d{4}-\d{4}-\d{4}`),
+            replace: "[REDACTED-CARD]",
+        },
     }
     
-    logger.Info(context.Background(), "Application started")
+    return decorator.NewMaskLogger(baseLogger, maskers...)
+}
+```
+
+###  Using Callbacks for Error Handling 🚨
+
+```go
+import (
+    "context"
+    "github.com/yuppyweb/cakelog/decorator"
+)
+
+func setupLoggerWithAlerts(baseLogger cakelog.Logger) (cakelog.Logger, error) {
+    callbackLogger, err := decorator.NewCallbackLogger(
+        baseLogger,
+        decorator.WithErrorCallback(func(ctx context.Context) {
+            // Send alert when error is logged
+            println("ERROR ALERT!")
+        }),
+        decorator.WithWarnCallback(func(ctx context.Context) {
+            // Track warning
+            println("WARNING ALERT!")
+        }),
+    )
+    if err != nil {
+        return nil, err
+    }
+    
+    return callbackLogger, nil
 }
 ```
 

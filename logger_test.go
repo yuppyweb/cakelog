@@ -8,6 +8,7 @@ import (
 	"github.com/yuppyweb/cakelog"
 )
 
+// TestNopLogger tests the NopLogger implementation to ensure all logging methods execute without errors.
 func TestNopLogger(t *testing.T) {
 	t.Parallel()
 
