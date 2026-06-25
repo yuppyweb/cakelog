@@ -38,8 +38,6 @@ Cakelog solves the problem of binding code to a specific logging library. Instea
    • Mask (sanitization)
 ```
 
----
-
 ## 📦 Installation
 
 ```bash
