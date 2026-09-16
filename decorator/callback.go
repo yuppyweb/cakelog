@@ -4,59 +4,86 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/yuppyweb/cakelog"
 )
 
 var (
-	ErrNilCallbackOptions   = errors.New("is nil callback options")
-	ErrNilCallbackOption    = errors.New("is nil callback option")
-	ErrNilCallbackDebugFunc = errors.New("is nil debug callback function")
-	ErrNilCallbackInfoFunc  = errors.New("is nil info callback function")
-	ErrNilCallbackWarnFunc  = errors.New("is nil warn callback function")
-	ErrNilCallbackErrorFunc = errors.New("is nil error callback function")
+	// ErrNilCallbackOption is returned by NewCallback when an option is nil.
+	ErrNilCallbackOption = errors.New("callback option is nil")
+	// ErrNilCallbackDebugFunc is returned by NewCallback when WithDebugCallback
+	// is given a nil function.
+	ErrNilCallbackDebugFunc = errors.New("debug callback is nil")
+	// ErrNilCallbackInfoFunc is returned by NewCallback when WithInfoCallback
+	// is given a nil function.
+	ErrNilCallbackInfoFunc = errors.New("info callback is nil")
+	// ErrNilCallbackWarnFunc is returned by NewCallback when WithWarnCallback
+	// is given a nil function.
+	ErrNilCallbackWarnFunc = errors.New("warn callback is nil")
+	// ErrNilCallbackErrorFunc is returned by NewCallback when WithErrorCallback
+	// is given a nil function.
+	ErrNilCallbackErrorFunc = errors.New("error callback is nil")
 )
 
-// CallbackFunc is a function type that is called when a log event occurs.
-type CallbackFunc func(ctx context.Context)
+// msgCallbackFunc is called after Debug, Info, or Warn forwards the entry
+// to the underlying logger. It receives the same context, message, and
+// arguments as the log call. The args slice is copied; nested maps and
+// slices are not.
+//
+// The callback runs on the method call, even if the underlying logger later
+// discards the entry. If the underlying logger panics, the callback does
+// not run. A panic in the callback is not recovered.
+type msgCallbackFunc func(ctx context.Context, msg string, args ...any)
 
-// CallbackOption is a function type used to configure CallbackOptions.
-type CallbackOption func(*CallbackOptions) error
+// errCallbackFunc is called after Error forwards the entry to the underlying
+// logger. It receives the same context, error, and arguments as the log call.
+// err may be nil. The args slice is copied; nested maps and slices are not.
+//
+// The callback runs on the method call, even if the underlying logger later
+// discards the entry. If the underlying logger panics, the callback does
+// not run. A panic in the callback is not recovered.
+type errCallbackFunc func(ctx context.Context, err error, args ...any)
 
-// CallbackOptions holds callback functions that are executed on each log level.
-type CallbackOptions struct {
-	// debugFunc is called when a debug log event occurs.
-	debugFunc CallbackFunc
+// CallbackOption configures a callback for NewCallback. Pass options to
+// NewCallback; do not invoke them directly. If the same level is configured
+// more than once, the last value wins.
+type CallbackOption func(*callbackOptions) error
 
-	// infoFunc is called when an info log event occurs.
-	infoFunc CallbackFunc
+// callbackOptions holds the callback for each log level.
+// Unset callbacks default to no-op functions.
+type callbackOptions struct {
+	// debugFunc is called after a Debug log call.
+	debugFunc msgCallbackFunc
 
-	// warnFunc is called when a warning log event occurs.
-	warnFunc CallbackFunc
+	// infoFunc is called after an Info log call.
+	infoFunc msgCallbackFunc
 
-	// errorFunc is called when an error log event occurs.
-	errorFunc CallbackFunc
+	// warnFunc is called after a Warn log call.
+	warnFunc msgCallbackFunc
+
+	// errorFunc is called after an Error log call.
+	errorFunc errCallbackFunc
 }
 
-// DefaultCallbackOptions returns a new CallbackOptions with default callback functions.
-func DefaultCallbackOptions() *CallbackOptions {
-	defaultCallbackFunc := func(context.Context) {}
+// defaultCallbackOptions returns a no-op callback for every log level.
+func defaultCallbackOptions() *callbackOptions {
+	noopMsg := func(context.Context, string, ...any) {}
+	noopErr := func(context.Context, error, ...any) {}
 
-	return &CallbackOptions{
-		debugFunc: defaultCallbackFunc,
-		infoFunc:  defaultCallbackFunc,
-		warnFunc:  defaultCallbackFunc,
-		errorFunc: defaultCallbackFunc,
+	return &callbackOptions{
+		debugFunc: noopMsg,
+		infoFunc:  noopMsg,
+		warnFunc:  noopMsg,
+		errorFunc: noopErr,
 	}
 }
 
-// WithDebugCallback returns a CallbackOption that sets the debug callback function.
-func WithDebugCallback(fn CallbackFunc) CallbackOption {
-	return func(opts *CallbackOptions) error {
-		if opts == nil {
-			return ErrNilCallbackOptions
-		}
-
+// WithDebugCallback sets the Debug callback used by NewCallback.
+// A nil function returns ErrNilCallbackDebugFunc when NewCallback applies
+// the option.
+func WithDebugCallback(fn msgCallbackFunc) CallbackOption {
+	return func(opts *callbackOptions) error {
 		if fn == nil {
 			return ErrNilCallbackDebugFunc
 		}
@@ -67,13 +94,11 @@ func WithDebugCallback(fn CallbackFunc) CallbackOption {
 	}
 }
 
-// WithInfoCallback returns a CallbackOption that sets the info callback function.
-func WithInfoCallback(fn CallbackFunc) CallbackOption {
-	return func(opts *CallbackOptions) error {
-		if opts == nil {
-			return ErrNilCallbackOptions
-		}
-
+// WithInfoCallback sets the Info callback used by NewCallback.
+// A nil function returns ErrNilCallbackInfoFunc when NewCallback applies
+// the option.
+func WithInfoCallback(fn msgCallbackFunc) CallbackOption {
+	return func(opts *callbackOptions) error {
 		if fn == nil {
 			return ErrNilCallbackInfoFunc
 		}
@@ -84,13 +109,11 @@ func WithInfoCallback(fn CallbackFunc) CallbackOption {
 	}
 }
 
-// WithWarnCallback returns a CallbackOption that sets the warn callback function.
-func WithWarnCallback(fn CallbackFunc) CallbackOption {
-	return func(opts *CallbackOptions) error {
-		if opts == nil {
-			return ErrNilCallbackOptions
-		}
-
+// WithWarnCallback sets the Warn callback used by NewCallback.
+// A nil function returns ErrNilCallbackWarnFunc when NewCallback applies
+// the option.
+func WithWarnCallback(fn msgCallbackFunc) CallbackOption {
+	return func(opts *callbackOptions) error {
 		if fn == nil {
 			return ErrNilCallbackWarnFunc
 		}
@@ -101,13 +124,11 @@ func WithWarnCallback(fn CallbackFunc) CallbackOption {
 	}
 }
 
-// WithErrorCallback returns a CallbackOption that sets the error callback function.
-func WithErrorCallback(fn CallbackFunc) CallbackOption {
-	return func(opts *CallbackOptions) error {
-		if opts == nil {
-			return ErrNilCallbackOptions
-		}
-
+// WithErrorCallback sets the Error callback used by NewCallback.
+// A nil function returns ErrNilCallbackErrorFunc when NewCallback applies
+// the option.
+func WithErrorCallback(fn errCallbackFunc) CallbackOption {
+	return func(opts *callbackOptions) error {
 		if fn == nil {
 			return ErrNilCallbackErrorFunc
 		}
@@ -118,63 +139,86 @@ func WithErrorCallback(fn CallbackFunc) CallbackOption {
 	}
 }
 
-// CallbackLogger is a logger decorator that executes callback functions on each log event.
-type CallbackLogger struct {
-	// log is the underlying logger to which log messages will be forwarded after executing callbacks.
+// callbackLogger is a decorator that runs a per-level callback after
+// forwarding each log call to the underlying logger.
+//
+// Callbacks fire on the Logger method call, not on actual emission by the
+// adapter. The same ctx, message or error, and args are passed to the
+// callback. The args slice is copied for the callback, not the values it
+// contains; the underlying logger receives the caller's slice. A panic in
+// the underlying logger is not recovered and skips the callback. A panic
+// in a callback is not recovered and propagates to the caller.
+type callbackLogger struct {
+	// log is the underlying logger; callbacks run after each call is forwarded.
 	log cakelog.Logger
 
-	// opt holds the configuration options for the CallbackLogger, such as the callback functions for each log level.
-	opt *CallbackOptions
+	// opt holds the callback functions for each log level.
+	opt *callbackOptions
 }
 
-// NewCallbackLogger creates a new CallbackLogger with the given logger and options.
-func NewCallbackLogger(log cakelog.Logger, opts ...CallbackOption) (*CallbackLogger, error) {
-	if log == nil {
-		return nil, ErrNilLogger
+// NewCallback wraps log with per-level callbacks. Omitted levels use no-op
+// callbacks. If the same level is configured more than once, the last
+// option wins.
+//
+// Callbacks run after the call is forwarded to the underlying logger, on
+// the Logger method call rather than on actual emission by the adapter.
+// The underlying logger may still drop the entry. If the underlying logger
+// panics, the callback does not run. A panic in a callback is not recovered
+// and propagates to the caller.
+//
+// The same ctx, message or error, and args are passed to the callback.
+// The args slice is copied for the callback, not the values it contains;
+// the underlying logger receives the caller's slice. Do not mutate nested
+// maps and slices.
+//
+// A nil log, including a typed nil such as a nil pointer stored in Logger,
+// returns a wrapped ErrNilLogger. A nil option returns a wrapped
+// ErrNilCallbackOption. A nil callback function returns a wrapped
+// ErrNilCallbackDebugFunc, ErrNilCallbackInfoFunc, ErrNilCallbackWarnFunc,
+// or ErrNilCallbackErrorFunc.
+func NewCallback(log cakelog.Logger, opts ...CallbackOption) (cakelog.Logger, error) {
+	if err := requireLogger(log); err != nil {
+		return nil, fmt.Errorf("callback logger: %w", err)
 	}
 
-	options := DefaultCallbackOptions()
+	options := defaultCallbackOptions()
 
 	for _, opt := range opts {
 		if opt == nil {
-			return nil, ErrNilCallbackOption
+			return nil, fmt.Errorf("callback logger: %w", ErrNilCallbackOption)
 		}
 
 		if err := opt(options); err != nil {
-			return nil, fmt.Errorf("failed to apply option: %w", err)
+			return nil, fmt.Errorf("callback logger: %w", err)
 		}
 	}
 
-	return &CallbackLogger{log: log, opt: options}, nil
+	return &callbackLogger{log: log, opt: options}, nil
 }
 
-// Debug logs a debug message and calls the debug callback function.
-func (cl *CallbackLogger) Debug(ctx context.Context, msg string, args ...any) {
-	defer cl.opt.debugFunc(ctx)
-
+// Debug forwards the message to the underlying logger, then calls the debug callback.
+func (cl *callbackLogger) Debug(ctx context.Context, msg string, args ...any) {
 	cl.log.Debug(ctx, msg, args...)
+	cl.opt.debugFunc(ctx, msg, slices.Clone(args)...)
 }
 
-// Info logs an info message and calls the info callback function.
-func (cl *CallbackLogger) Info(ctx context.Context, msg string, args ...any) {
-	defer cl.opt.infoFunc(ctx)
-
+// Info forwards the message to the underlying logger, then calls the info callback.
+func (cl *callbackLogger) Info(ctx context.Context, msg string, args ...any) {
 	cl.log.Info(ctx, msg, args...)
+	cl.opt.infoFunc(ctx, msg, slices.Clone(args)...)
 }
 
-// Warn logs a warning message and calls the warn callback function.
-func (cl *CallbackLogger) Warn(ctx context.Context, msg string, args ...any) {
-	defer cl.opt.warnFunc(ctx)
-
+// Warn forwards the message to the underlying logger, then calls the warn callback.
+func (cl *callbackLogger) Warn(ctx context.Context, msg string, args ...any) {
 	cl.log.Warn(ctx, msg, args...)
+	cl.opt.warnFunc(ctx, msg, slices.Clone(args)...)
 }
 
-// Error logs an error and calls the error callback function.
-func (cl *CallbackLogger) Error(ctx context.Context, err error, args ...any) {
-	defer cl.opt.errorFunc(ctx)
-
+// Error forwards the error to the underlying logger, then calls the error callback.
+func (cl *callbackLogger) Error(ctx context.Context, err error, args ...any) {
 	cl.log.Error(ctx, err, args...)
+	cl.opt.errorFunc(ctx, err, slices.Clone(args)...)
 }
 
-// Ensure CallbackLogger implements the cakelog.Logger interface.
-var _ cakelog.Logger = (*CallbackLogger)(nil)
+// Ensure callbackLogger implements the cakelog.Logger interface.
+var _ cakelog.Logger = (*callbackLogger)(nil)

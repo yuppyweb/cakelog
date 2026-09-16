@@ -2,119 +2,96 @@ package decorator
 
 import (
 	"context"
-	"sync"
+	"errors"
+	"fmt"
 
 	"github.com/yuppyweb/cakelog"
 )
 
-// contextLoggerKey is an unexported type used as a unique key for storing
-// context values. Using an unexported type prevents collisions with other packages.
-type contextLoggerKey struct{}
+// ErrNilContextFields is returned by NewContext when fields is nil.
+var ErrNilContextFields = errors.New("context fields is nil")
 
-// WithContextValue returns a new context with the given key-value pair added to its context values.
-// If the key already exists, its value is updated.
+// contextFields extracts structured fields from ctx for a log call.
+// A nil or empty map leaves the call-site arguments unchanged.
+// The returned map is prepended as-is; do not mutate it after returning
+// if that map may be reused.
+type contextFields func(ctx context.Context) map[string]any
+
+// contextLogger is a decorator that prepends fields extracted from ctx
+// to each log call as a map[string]any, then forwards to the underlying
+// logger.
 //
-// Note: We copy the sync.Map to ensure isolation between parent and child contexts.
-// Without copying, mutations to the child context would affect the parent context as well,
-// since context.WithValue only wraps the value without deep copying it.
-func WithContextValue(ctx context.Context, key string, value any) context.Context {
-	newSm := &sync.Map{}
-
-	if sm, ok := ctx.Value(contextLoggerKey{}).(*sync.Map); ok {
-		sm.Range(func(k, v any) bool {
-			newSm.Store(k, v)
-
-			return true
-		})
-	}
-
-	newSm.Store(key, value)
-
-	return context.WithValue(ctx, contextLoggerKey{}, newSm)
-}
-
-// ContextValue returns the value associated with the given key in the context,
-// or nil if the key is not found.
-func ContextValue(ctx context.Context, key string) any {
-	sm, ok := ctx.Value(contextLoggerKey{}).(*sync.Map)
-	if !ok {
-		return nil
-	}
-
-	val, ok := sm.Load(key)
-	if !ok {
-		return nil
-	}
-
-	return val
-}
-
-// ContextValues returns all key-value pairs stored in the context as a map.
-// If no values are stored, it returns an empty map.
-func ContextValues(ctx context.Context) map[string]any {
-	ctxArgs := make(map[string]any)
-
-	sm, ok := ctx.Value(contextLoggerKey{}).(*sync.Map)
-	if !ok {
-		return ctxArgs
-	}
-
-	sm.Range(func(k, v any) bool {
-		if key, ok := k.(string); ok {
-			ctxArgs[key] = v
-		}
-
-		return true
-	})
-
-	return ctxArgs
-}
-
-// ContextLogger is a decorator that enriches log messages with context values.
-type ContextLogger struct {
+// Call-site args follow the map, so duplicate keys in args override
+// extracted fields when an adapter keeps the last value. Wrapping the
+// same logger more than once prepends the map on every layer.
+//
+// A panic in fields is not recovered and propagates to the caller.
+type contextLogger struct {
 	// log is the underlying logger where messages are forwarded.
 	log cakelog.Logger
+
+	// fields extracts a map of fields from the log call's context.
+	fields contextFields
 }
 
-// NewContextLogger creates a new ContextLogger that wraps the provided logger.
-func NewContextLogger(log cakelog.Logger) (*ContextLogger, error) {
-	if log == nil {
-		return nil, ErrNilLogger
+// NewContext wraps log so each log call prepends fields(ctx) as a
+// map[string]any before the call-site arguments. fields is invoked on
+// every log call, including when it ignores ctx and returns a static map.
+//
+// A nil or empty map from fields leaves args unchanged. Call-site args
+// follow the map, so duplicate keys in args override extracted fields
+// when an adapter keeps the last value. Wrapping the same logger more
+// than once prepends the map on every layer.
+//
+// The map is prepended as-is; fields must not mutate a returned map
+// after the call if that map may be reused. A panic in fields is not
+// recovered. A nil log, including a typed nil such as a nil pointer
+// stored in Logger, returns a wrapped ErrNilLogger.
+// A nil fields function returns a wrapped ErrNilContextFields.
+func NewContext(log cakelog.Logger, fields contextFields) (cakelog.Logger, error) {
+	if err := requireLogger(log); err != nil {
+		return nil, fmt.Errorf("context logger: %w", err)
 	}
 
-	return &ContextLogger{log: log}, nil
-}
-
-// Debug logs a debug message with context values.
-func (cl *ContextLogger) Debug(ctx context.Context, msg string, args ...any) {
-	cl.log.Debug(ctx, msg, cl.appendContextArgs(ctx, args)...)
-}
-
-// Info logs an info message with context values.
-func (cl *ContextLogger) Info(ctx context.Context, msg string, args ...any) {
-	cl.log.Info(ctx, msg, cl.appendContextArgs(ctx, args)...)
-}
-
-// Warn logs a warning message with context values.
-func (cl *ContextLogger) Warn(ctx context.Context, msg string, args ...any) {
-	cl.log.Warn(ctx, msg, cl.appendContextArgs(ctx, args)...)
-}
-
-// Error logs an error message with context values.
-func (cl *ContextLogger) Error(ctx context.Context, err error, args ...any) {
-	cl.log.Error(ctx, err, cl.appendContextArgs(ctx, args)...)
-}
-
-// appendContextArgs appends context values to the log arguments.
-func (cl *ContextLogger) appendContextArgs(ctx context.Context, args []any) []any {
-	ctxArgs := ContextValues(ctx)
-
-	if len(ctxArgs) > 0 {
-		args = append(args, ctxArgs)
+	if fields == nil {
+		return nil, fmt.Errorf("context logger: %w", ErrNilContextFields)
 	}
 
-	return args
+	return &contextLogger{log: log, fields: fields}, nil
 }
 
-// Ensure that ContextLogger implements the cakelog.Logger interface.
-var _ cakelog.Logger = (*ContextLogger)(nil)
+// Debug prepends fields extracted from ctx, then forwards to the underlying logger.
+func (cl *contextLogger) Debug(ctx context.Context, msg string, args ...any) {
+	cl.log.Debug(ctx, msg, cl.prependContextArgs(ctx, args)...)
+}
+
+// Info prepends fields extracted from ctx, then forwards to the underlying logger.
+func (cl *contextLogger) Info(ctx context.Context, msg string, args ...any) {
+	cl.log.Info(ctx, msg, cl.prependContextArgs(ctx, args)...)
+}
+
+// Warn prepends fields extracted from ctx, then forwards to the underlying logger.
+func (cl *contextLogger) Warn(ctx context.Context, msg string, args ...any) {
+	cl.log.Warn(ctx, msg, cl.prependContextArgs(ctx, args)...)
+}
+
+// Error prepends fields extracted from ctx, then forwards to the underlying logger.
+func (cl *contextLogger) Error(ctx context.Context, err error, args ...any) {
+	cl.log.Error(ctx, err, cl.prependContextArgs(ctx, args)...)
+}
+
+// prependContextArgs returns args with the map from fields prepended.
+// A nil or empty map leaves args unchanged. The returned slice does not
+// alias the caller's argument storage.
+func (cl *contextLogger) prependContextArgs(ctx context.Context, args []any) []any {
+	fields := cl.fields(ctx)
+
+	if len(fields) == 0 {
+		return args
+	}
+
+	return append([]any{fields}, args...)
+}
+
+// Ensure contextLogger implements the cakelog.Logger interface.
+var _ cakelog.Logger = (*contextLogger)(nil)

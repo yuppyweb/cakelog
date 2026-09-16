@@ -6,694 +6,460 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/yuppyweb/cakelog"
 	"github.com/yuppyweb/cakelog/decorator"
 )
 
-// TestWithDebugCallback_NilOptions checks that WithDebugCallback returns
-// ErrNilCallbackOpts error when passed nil options.
-func TestWithDebugCallback_NilOptions(t *testing.T) {
-	t.Parallel()
+func newCallbackLogger(
+	t *testing.T,
+	log cakelog.Logger,
+	opts ...decorator.CallbackOption,
+) cakelog.Logger {
+	t.Helper()
 
-	opt := decorator.WithDebugCallback(func(ctx context.Context) {})
-
-	err := opt(nil)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
-		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
-	}
-}
-
-// TestWithDebugCallback_NilFunc checks that WithDebugCallback returns
-// ErrNilDebugFunc error when passed nil function.
-func TestWithDebugCallback_NilFunc(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithDebugCallback(nil)
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackDebugFunc) {
-		t.Errorf("expected error to be ErrNilCallbackDebugFunc, got %v", err)
-	}
-}
-
-// TestWithDebugCallback_Success checks successful creation of WithDebugCallback
-// with valid parameters.
-func TestWithDebugCallback_Success(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithDebugCallback(func(ctx context.Context) {})
-
-	err := opt(decorator.DefaultCallbackOptions())
+	logger, err := decorator.NewCallback(log, opts...)
 	if err != nil {
-		t.Errorf("expected no error, got %v", err)
+		t.Fatalf("failed to create callback logger: %v", err)
 	}
+
+	return logger
 }
 
-// TestWithInfoCallback_NilOptions checks that WithInfoCallback returns
-// ErrNilCallbackOpts error when passed nil options.
-func TestWithInfoCallback_NilOptions(t *testing.T) {
-	t.Parallel()
+func assertCallbackError(t *testing.T, err error, want error) {
+	t.Helper()
 
-	opt := decorator.WithInfoCallback(func(ctx context.Context) {})
-
-	err := opt(nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
-		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
-	}
-}
-
-// TestWithInfoCallback_NilFunc checks that WithInfoCallback returns
-// ErrNilInfoFunc error when passed nil function.
-func TestWithInfoCallback_NilFunc(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithInfoCallback(nil)
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackInfoFunc) {
-		t.Errorf("expected error to be ErrNilCallbackInfoFunc, got %v", err)
-	}
-}
-
-// TestWithInfoCallback_Success checks successful creation of WithInfoCallback
-// with valid parameters.
-func TestWithInfoCallback_Success(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithInfoCallback(func(ctx context.Context) {})
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-}
-
-// TestWithWarnCallback_NilOptions checks that WithWarnCallback returns
-// ErrNilCallbackOpts error when passed nil options.
-func TestWithWarnCallback_NilOptions(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithWarnCallback(func(ctx context.Context) {})
-
-	err := opt(nil)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
-		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
-	}
-}
-
-// TestWithWarnCallback_NilFunc checks that WithWarnCallback returns
-// ErrNilWarnFunc error when passed nil function.
-func TestWithWarnCallback_NilFunc(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithWarnCallback(nil)
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackWarnFunc) {
-		t.Errorf("expected error to be ErrNilCallbackWarnFunc, got %v", err)
-	}
-}
-
-// TestWithWarnCallback_Success checks successful creation of WithWarnCallback
-// with valid parameters.
-func TestWithWarnCallback_Success(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithWarnCallback(func(ctx context.Context) {})
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-}
-
-// TestWithErrorCallback_NilOptions checks that WithErrorCallback returns
-// ErrNilCallbackOpts error when passed nil options.
-func TestWithErrorCallback_NilOptions(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithErrorCallback(func(ctx context.Context) {})
-
-	err := opt(nil)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackOptions) {
-		t.Errorf("expected error to be ErrNilCallbackOpts, got %v", err)
-	}
-}
-
-// TestWithErrorCallback_NilFunc checks that WithErrorCallback returns
-// ErrNilErrorFunc error when passed nil function.
-func TestWithErrorCallback_NilFunc(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithErrorCallback(nil)
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackErrorFunc) {
-		t.Errorf("expected error to be ErrNilCallbackErrorFunc, got %v", err)
-	}
-}
-
-// TestWithErrorCallback_Success checks successful creation of WithErrorCallback
-// with valid parameters.
-func TestWithErrorCallback_Success(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithErrorCallback(func(ctx context.Context) {})
-
-	err := opt(decorator.DefaultCallbackOptions())
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-}
-
-// TestNewCallbackLogger_NilLogger checks that NewCallbackLogger returns
-// ErrNilLogger error when passed nil logger.
-func TestNewCallbackLogger_NilLogger(t *testing.T) {
-	t.Parallel()
-
-	_, err := decorator.NewCallbackLogger(nil)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilLogger) {
+	if !errors.Is(err, want) {
 		t.Errorf(
-			"unexpected error when creating CallbackLogger with nil logger:\nGot:  %v\nWant: %v",
+			"unexpected error when creating callback logger:\nGot:  %v\nWant: %v",
 			err,
-			decorator.ErrNilLogger,
+			want,
+		)
+	}
+
+	if !strings.Contains(err.Error(), "callback logger:") {
+		t.Errorf(
+			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
+			err.Error(),
+			"callback logger:",
 		)
 	}
 }
 
-// TestNewCallbackLogger_NilOption checks that NewCallbackLogger returns
-// ErrNilCallbackOpt error when passed nil option.
-func TestNewCallbackLogger_NilOption(t *testing.T) {
+// TestNewCallback_NilLogger tests that NewCallback returns a wrapped
+// ErrNilLogger when the logger is nil.
+func TestNewCallback_NilLogger(t *testing.T) {
 	t.Parallel()
 
-	_, err := decorator.NewCallbackLogger(new(mockLogger), nil)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	_, err := decorator.NewCallback(nil)
+
+	assertCallbackError(t, err, decorator.ErrNilLogger)
+}
+
+// TestNewCallback_TypedNilLogger tests that NewCallback returns a wrapped
+// ErrNilLogger when a typed nil logger is provided.
+func TestNewCallback_TypedNilLogger(t *testing.T) {
+	t.Parallel()
+
+	var typedNil *mockLogger
+
+	_, err := decorator.NewCallback(typedNil)
+
+	assertCallbackError(t, err, decorator.ErrNilLogger)
+}
+
+// TestNewCallback_NilOption tests that NewCallback returns a wrapped
+// ErrNilCallbackOption when an option is nil.
+func TestNewCallback_NilOption(t *testing.T) {
+	t.Parallel()
+
+	_, err := decorator.NewCallback(new(mockLogger), nil)
+
+	assertCallbackError(t, err, decorator.ErrNilCallbackOption)
+}
+
+// TestNewCallback_NilCallbackFunc tests that NewCallback returns a wrapped
+// sentinel error when a nil callback is configured for a level.
+func TestNewCallback_NilCallbackFunc(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		opt  decorator.CallbackOption
+		want error
+	}{
+		{
+			name: "debug",
+			opt:  decorator.WithDebugCallback(nil),
+			want: decorator.ErrNilCallbackDebugFunc,
+		},
+		{
+			name: "info",
+			opt:  decorator.WithInfoCallback(nil),
+			want: decorator.ErrNilCallbackInfoFunc,
+		},
+		{
+			name: "warn",
+			opt:  decorator.WithWarnCallback(nil),
+			want: decorator.ErrNilCallbackWarnFunc,
+		},
+		{
+			name: "error",
+			opt:  decorator.WithErrorCallback(nil),
+			want: decorator.ErrNilCallbackErrorFunc,
+		},
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackOption) {
-		t.Errorf("expected error to be ErrNilCallbackOpt, got %v", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := decorator.NewCallback(new(mockLogger), tc.opt)
+
+			assertCallbackError(t, err, tc.want)
+		})
 	}
 }
 
-// TestNewCallbackLogger_NilDebugCallback checks that NewCallbackLogger returns
-// error with correct message when passed nil debug callback.
-func TestNewCallbackLogger_NilDebugCallback(t *testing.T) {
+// TestNewCallback_DefaultNoop tests that NewCallback with no options
+// forwards log calls and does not panic.
+func TestNewCallback_DefaultNoop(t *testing.T) {
 	t.Parallel()
 
-	opt := decorator.WithDebugCallback(nil)
+	base := new(mockLogger)
+	logger := newCallbackLogger(t, base)
+	ctx := context.Background()
+	expectedErr := errors.New("test error")
 
-	_, err := decorator.NewCallbackLogger(new(mockLogger), opt)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	logger.Debug(ctx, "debug message")
+	logger.Info(ctx, "info message")
+	logger.Warn(ctx, "warn message")
+	logger.Error(ctx, expectedErr)
+
+	assertLoggedMsg(t, base.debugIn, ctx, "debug message")
+	assertLoggedMsg(t, base.infoIn, ctx, "info message")
+	assertLoggedMsg(t, base.warnIn, ctx, "warn message")
+	assertLoggedErr(t, base.errorIn, ctx, expectedErr)
+}
+
+// TestNewCallback_LastOptionWins tests that the last option for a level
+// replaces earlier callbacks for that level.
+func TestNewCallback_LastOptionWins(t *testing.T) {
+	t.Parallel()
+
+	base := new(mockLogger)
+	first := false
+	second := false
+
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithDebugCallback(func(context.Context, string, ...any) {
+			first = true
+		}),
+		decorator.WithDebugCallback(func(context.Context, string, ...any) {
+			second = true
+		}),
+	)
+
+	logger.Debug(context.Background(), "debug message")
+
+	if first {
+		t.Errorf("expected the first debug callback not to run")
 	}
 
-	if !errors.Is(err, decorator.ErrNilCallbackDebugFunc) {
-		t.Errorf("expected error to be ErrNilCallbackDebugFunc, got %v", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to apply option:") {
-		t.Errorf(
-			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
-			err.Error(), "failed to apply option:")
+	if !second {
+		t.Errorf("expected the last debug callback to run")
 	}
 }
 
-// TestNewCallbackLogger_NilInfoCallback checks that NewCallbackLogger returns
-// error with correct message when passed nil info callback.
-func TestNewCallbackLogger_NilInfoCallback(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithInfoCallback(nil)
-
-	_, err := decorator.NewCallbackLogger(new(mockLogger), opt)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackInfoFunc) {
-		t.Errorf("expected error to be ErrNilCallbackInfoFunc, got %v", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to apply option:") {
-		t.Errorf(
-			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
-			err.Error(), "failed to apply option:")
-	}
-}
-
-// TestNewCallbackLogger_NilWarnCallback checks that NewCallbackLogger returns
-// error with correct message when passed nil warn callback.
-func TestNewCallbackLogger_NilWarnCallback(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithWarnCallback(nil)
-
-	_, err := decorator.NewCallbackLogger(new(mockLogger), opt)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackWarnFunc) {
-		t.Errorf("expected error to be ErrNilCallbackWarnFunc, got %v", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to apply option:") {
-		t.Errorf(
-			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
-			err.Error(), "failed to apply option:")
-	}
-}
-
-// TestNewCallbackLogger_NilErrorCallback checks that NewCallbackLogger returns
-// error with correct message when passed nil error callback.
-func TestNewCallbackLogger_NilErrorCallback(t *testing.T) {
-	t.Parallel()
-
-	opt := decorator.WithErrorCallback(nil)
-
-	_, err := decorator.NewCallbackLogger(new(mockLogger), opt)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	if !errors.Is(err, decorator.ErrNilCallbackErrorFunc) {
-		t.Errorf("expected error to be ErrNilCallbackErrorFunc, got %v", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to apply option:") {
-		t.Errorf(
-			"error message does not contain expected text:\nGot:  %s\nWant to contain: %s",
-			err.Error(), "failed to apply option:")
-	}
-}
-
-// TestCallbackLogger_Debug checks that CallbackLogger correctly invokes
-// debug callback and passes parameters to the underlying logger.
+// TestCallbackLogger_Debug tests that Debug forwards to the underlying
+// logger, then invokes the debug callback with the same arguments.
 func TestCallbackLogger_Debug(t *testing.T) {
 	t.Parallel()
 
 	type ctxKey struct{}
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	expectedCtx := context.WithValue(context.Background(), ctxKey{}, "test debug")
 	execed := false
 
-	opt := decorator.WithDebugCallback(func(ctx context.Context) {
-		if ctx != expectedCtx {
-			t.Errorf("expected context to be %v, got %v", expectedCtx, ctx)
-		}
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithDebugCallback(func(ctx context.Context, msg string, args ...any) {
+			if ctx != expectedCtx {
+				t.Errorf("expected callback context to be %v, got %v", expectedCtx, ctx)
+			}
 
-		execed = true
-	})
+			if msg != "debug message" {
+				t.Errorf("expected callback message to be %q, got %q", "debug message", msg)
+			}
 
-	logger, err := decorator.NewCallbackLogger(mockLogger, opt)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+			if len(args) != 2 || args[0] != "debug" || args[1] != 42 {
+				t.Errorf("expected callback args [debug 42], got %v", args)
+			}
+
+			execed = true
+		}),
+	)
 
 	logger.Debug(expectedCtx, "debug message", "debug", 42)
 
-	if len(mockLogger.debugIn) != 1 {
-		t.Fatalf("Expected Debug to be called once, got %d calls", len(mockLogger.debugIn))
-	}
-
-	if mockLogger.debugIn[0].ctx != expectedCtx {
-		t.Errorf(
-			"Expected Debug context to be %v, got %v",
-			expectedCtx,
-			mockLogger.debugIn[0].ctx,
-		)
-	}
-
-	if mockLogger.debugIn[0].msg != "debug message" {
-		t.Errorf(
-			"Expected Debug message to be 'debug message', got '%s'",
-			mockLogger.debugIn[0].msg,
-		)
-	}
-
-	if len(mockLogger.debugIn[0].args) != 2 {
-		t.Fatalf(
-			"Expected Debug to be called with 2 arguments, got %d",
-			len(mockLogger.debugIn[0].args),
-		)
-	}
-
-	if mockLogger.debugIn[0].args[0] != "debug" {
-		t.Errorf(
-			"Expected first argument to be 'debug', got '%v'",
-			mockLogger.debugIn[0].args[0],
-		)
-	}
-
-	if mockLogger.debugIn[0].args[1] != 42 {
-		t.Errorf(
-			"Expected second argument to be 42, got '%v'",
-			mockLogger.debugIn[0].args[1],
-		)
-	}
+	assertLoggedMsg(t, base.debugIn, expectedCtx, "debug message", "debug", 42)
 
 	if !execed {
 		t.Errorf("expected debug callback to be executed")
 	}
 }
 
-// TestCallbackLogger_Info checks that CallbackLogger correctly invokes
-// info callback and passes parameters to the underlying logger.
+// TestCallbackLogger_Info tests that Info forwards to the underlying
+// logger, then invokes the info callback with the same arguments.
 func TestCallbackLogger_Info(t *testing.T) {
 	t.Parallel()
 
 	type ctxKey struct{}
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	expectedCtx := context.WithValue(context.Background(), ctxKey{}, "test info")
 	execed := false
 
-	opt := decorator.WithInfoCallback(func(ctx context.Context) {
-		if ctx != expectedCtx {
-			t.Errorf("expected context to be %v, got %v", expectedCtx, ctx)
-		}
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithInfoCallback(func(ctx context.Context, msg string, args ...any) {
+			if ctx != expectedCtx {
+				t.Errorf("expected callback context to be %v, got %v", expectedCtx, ctx)
+			}
 
-		execed = true
-	})
+			if msg != "info message" {
+				t.Errorf("expected callback message to be %q, got %q", "info message", msg)
+			}
 
-	logger, err := decorator.NewCallbackLogger(mockLogger, opt)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+			if len(args) != 2 || args[0] != "info" || args[1] != 75 {
+				t.Errorf("expected callback args [info 75], got %v", args)
+			}
+
+			execed = true
+		}),
+	)
 
 	logger.Info(expectedCtx, "info message", "info", 75)
 
-	if len(mockLogger.infoIn) != 1 {
-		t.Fatalf("Expected Info to be called once, got %d calls", len(mockLogger.infoIn))
-	}
-
-	if mockLogger.infoIn[0].ctx != expectedCtx {
-		t.Errorf(
-			"Expected Info context to be %v, got %v",
-			expectedCtx,
-			mockLogger.infoIn[0].ctx,
-		)
-	}
-
-	if mockLogger.infoIn[0].msg != "info message" {
-		t.Errorf(
-			"Expected Info message to be 'info message', got '%s'",
-			mockLogger.infoIn[0].msg,
-		)
-	}
-
-	if len(mockLogger.infoIn[0].args) != 2 {
-		t.Fatalf(
-			"Expected Info to be called with 2 arguments, got %d",
-			len(mockLogger.infoIn[0].args),
-		)
-	}
-
-	if mockLogger.infoIn[0].args[0] != "info" {
-		t.Errorf(
-			"Expected first argument to be 'info', got '%v'",
-			mockLogger.infoIn[0].args[0],
-		)
-	}
-
-	if mockLogger.infoIn[0].args[1] != 75 {
-		t.Errorf(
-			"Expected second argument to be 75, got '%v'",
-			mockLogger.infoIn[0].args[1],
-		)
-	}
+	assertLoggedMsg(t, base.infoIn, expectedCtx, "info message", "info", 75)
 
 	if !execed {
 		t.Errorf("expected info callback to be executed")
 	}
 }
 
-// TestCallbackLogger_Warn checks that CallbackLogger correctly invokes
-// warn callback and passes parameters to the underlying logger.
+// TestCallbackLogger_Warn tests that Warn forwards to the underlying
+// logger, then invokes the warn callback with the same arguments.
 func TestCallbackLogger_Warn(t *testing.T) {
 	t.Parallel()
 
 	type ctxKey struct{}
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	expectedCtx := context.WithValue(context.Background(), ctxKey{}, "test warn")
 	execed := false
 
-	opt := decorator.WithWarnCallback(func(ctx context.Context) {
-		if ctx != expectedCtx {
-			t.Errorf("expected context to be %v, got %v", expectedCtx, ctx)
-		}
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithWarnCallback(func(ctx context.Context, msg string, args ...any) {
+			if ctx != expectedCtx {
+				t.Errorf("expected callback context to be %v, got %v", expectedCtx, ctx)
+			}
 
-		execed = true
-	})
+			if msg != "warn message" {
+				t.Errorf("expected callback message to be %q, got %q", "warn message", msg)
+			}
 
-	logger, err := decorator.NewCallbackLogger(mockLogger, opt)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+			if len(args) != 2 || args[0] != "warn" || args[1] != 80 {
+				t.Errorf("expected callback args [warn 80], got %v", args)
+			}
+
+			execed = true
+		}),
+	)
 
 	logger.Warn(expectedCtx, "warn message", "warn", 80)
 
-	if len(mockLogger.warnIn) != 1 {
-		t.Fatalf("Expected Warn to be called once, got %d calls", len(mockLogger.warnIn))
-	}
-
-	if mockLogger.warnIn[0].ctx != expectedCtx {
-		t.Errorf(
-			"Expected Warn context to be %v, got %v",
-			expectedCtx,
-			mockLogger.warnIn[0].ctx,
-		)
-	}
-
-	if mockLogger.warnIn[0].msg != "warn message" {
-		t.Errorf(
-			"Expected Warn message to be 'warn message', got '%s'",
-			mockLogger.warnIn[0].msg,
-		)
-	}
-
-	if len(mockLogger.warnIn[0].args) != 2 {
-		t.Fatalf(
-			"Expected Warn to be called with 2 arguments, got %d",
-			len(mockLogger.warnIn[0].args),
-		)
-	}
-
-	if mockLogger.warnIn[0].args[0] != "warn" {
-		t.Errorf(
-			"Expected first argument to be 'warn', got '%v'",
-			mockLogger.warnIn[0].args[0],
-		)
-	}
-
-	if mockLogger.warnIn[0].args[1] != 80 {
-		t.Errorf(
-			"Expected second argument to be 80, got '%v'",
-			mockLogger.warnIn[0].args[1],
-		)
-	}
+	assertLoggedMsg(t, base.warnIn, expectedCtx, "warn message", "warn", 80)
 
 	if !execed {
 		t.Errorf("expected warn callback to be executed")
 	}
 }
 
-// TestCallbackLogger_Error checks that CallbackLogger correctly invokes
-// error callback and passes parameters to the underlying logger.
+// TestCallbackLogger_Error tests that Error forwards to the underlying
+// logger, then invokes the error callback with the same arguments.
 func TestCallbackLogger_Error(t *testing.T) {
 	t.Parallel()
 
 	type ctxKey struct{}
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	expectedCtx := context.WithValue(context.Background(), ctxKey{}, "test error")
 	expectedErr := errors.New("test error")
 	execed := false
 
-	opt := decorator.WithErrorCallback(func(ctx context.Context) {
-		if ctx != expectedCtx {
-			t.Errorf("expected context to be %v, got %v", expectedCtx, ctx)
-		}
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithErrorCallback(func(ctx context.Context, err error, args ...any) {
+			if ctx != expectedCtx {
+				t.Errorf("expected callback context to be %v, got %v", expectedCtx, ctx)
+			}
 
-		execed = true
-	})
+			if !errors.Is(err, expectedErr) {
+				t.Errorf("expected callback error to be %v, got %v", expectedErr, err)
+			}
 
-	logger, err := decorator.NewCallbackLogger(mockLogger, opt)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+			if len(args) != 2 || args[0] != "error" || args[1] != 99 {
+				t.Errorf("expected callback args [error 99], got %v", args)
+			}
+
+			execed = true
+		}),
+	)
 
 	logger.Error(expectedCtx, expectedErr, "error", 99)
 
-	if len(mockLogger.errorIn) != 1 {
-		t.Fatalf("Expected Error to be called once, got %d calls", len(mockLogger.errorIn))
-	}
-
-	if mockLogger.errorIn[0].ctx != expectedCtx {
-		t.Errorf(
-			"Expected Error context to be %v, got %v",
-			expectedCtx,
-			mockLogger.errorIn[0].ctx,
-		)
-	}
-
-	if !errors.Is(mockLogger.errorIn[0].err, expectedErr) {
-		t.Errorf(
-			"Expected Error to be %v, got %v",
-			expectedErr,
-			mockLogger.errorIn[0].err,
-		)
-	}
-
-	if len(mockLogger.errorIn[0].args) != 2 {
-		t.Fatalf(
-			"Expected Error to be called with 2 arguments, got %d",
-			len(mockLogger.errorIn[0].args),
-		)
-	}
-
-	if mockLogger.errorIn[0].args[0] != "error" {
-		t.Errorf(
-			"Expected first argument to be 'error', got '%v'",
-			mockLogger.errorIn[0].args[0],
-		)
-	}
-
-	if mockLogger.errorIn[0].args[1] != 99 {
-		t.Errorf(
-			"Expected second argument to be 99, got '%v'",
-			mockLogger.errorIn[0].args[1],
-		)
-	}
+	assertLoggedErr(t, base.errorIn, expectedCtx, expectedErr, "error", 99)
 
 	if !execed {
 		t.Errorf("expected error callback to be executed")
 	}
 }
 
-// TestCallbackLogger_AllCallbacks checks that CallbackLogger correctly invokes
-// all four callback functions when logging messages at different levels.
+// TestCallbackLogger_NilError tests that an Error callback may receive a
+// nil error.
+func TestCallbackLogger_NilError(t *testing.T) {
+	t.Parallel()
+
+	base := new(mockLogger)
+	execed := false
+
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithErrorCallback(func(_ context.Context, err error, _ ...any) {
+			if err != nil {
+				t.Errorf("expected nil error, got %v", err)
+			}
+
+			execed = true
+		}),
+	)
+
+	logger.Error(context.Background(), nil)
+
+	assertLoggedErr(t, base.errorIn, context.Background(), nil)
+
+	if !execed {
+		t.Errorf("expected error callback to be executed")
+	}
+}
+
+// TestCallbackLogger_AllCallbacks tests that only the callback for the
+// called level runs.
 func TestCallbackLogger_AllCallbacks(t *testing.T) {
 	t.Parallel()
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	ctx := context.Background()
 	execedDebug := false
 	execedInfo := false
 	execedWarn := false
 	execedError := false
 
-	opts := []decorator.CallbackOption{
-		decorator.WithDebugCallback(func(ctx context.Context) {
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithDebugCallback(func(context.Context, string, ...any) {
 			execedDebug = true
 		}),
-		decorator.WithInfoCallback(func(ctx context.Context) {
+		decorator.WithInfoCallback(func(context.Context, string, ...any) {
 			execedInfo = true
 		}),
-		decorator.WithWarnCallback(func(ctx context.Context) {
+		decorator.WithWarnCallback(func(context.Context, string, ...any) {
 			execedWarn = true
 		}),
-		decorator.WithErrorCallback(func(ctx context.Context) {
+		decorator.WithErrorCallback(func(context.Context, error, ...any) {
 			execedError = true
 		}),
-	}
-
-	logger, err := decorator.NewCallbackLogger(mockLogger, opts...)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+	)
 
 	logger.Debug(ctx, "debug message")
-	logger.Info(ctx, "info message")
-	logger.Warn(ctx, "warn message")
-	logger.Error(ctx, errors.New("test error"))
 
 	if !execedDebug {
 		t.Errorf("expected debug callback to be executed")
 	}
 
+	if execedInfo || execedWarn || execedError {
+		t.Errorf("expected only debug callback to be executed")
+	}
+
+	logger.Info(ctx, "info message")
+
 	if !execedInfo {
 		t.Errorf("expected info callback to be executed")
 	}
 
+	if execedWarn || execedError {
+		t.Errorf("expected warn and error callbacks not to be executed yet")
+	}
+
+	logger.Warn(ctx, "warn message")
+
 	if !execedWarn {
 		t.Errorf("expected warn callback to be executed")
 	}
+
+	if execedError {
+		t.Errorf("expected error callback not to be executed yet")
+	}
+
+	logger.Error(ctx, errors.New("test error"))
 
 	if !execedError {
 		t.Errorf("expected error callback to be executed")
 	}
 }
 
-// TestCallbackLogger_MultipleCallbacks checks that CallbackLogger correctly invokes
-// callbacks multiple times when logging multiple messages.
+// TestCallbackLogger_MultipleCallbacks tests that each callback runs once
+// per log call.
 func TestCallbackLogger_MultipleCallbacks(t *testing.T) {
 	t.Parallel()
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	ctx := context.Background()
 	countDebug := 0
 	countInfo := 0
 	countWarn := 0
 	countError := 0
 
-	opts := []decorator.CallbackOption{
-		decorator.WithDebugCallback(func(ctx context.Context) {
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithDebugCallback(func(context.Context, string, ...any) {
 			countDebug++
 		}),
-		decorator.WithInfoCallback(func(ctx context.Context) {
+		decorator.WithInfoCallback(func(context.Context, string, ...any) {
 			countInfo++
 		}),
-		decorator.WithWarnCallback(func(ctx context.Context) {
+		decorator.WithWarnCallback(func(context.Context, string, ...any) {
 			countWarn++
 		}),
-		decorator.WithErrorCallback(func(ctx context.Context) {
+		decorator.WithErrorCallback(func(context.Context, error, ...any) {
 			countError++
 		}),
-	}
-
-	logger, err := decorator.NewCallbackLogger(mockLogger, opts...)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+	)
 
 	for range 5 {
 		logger.Debug(ctx, "debug message")
@@ -719,53 +485,50 @@ func TestCallbackLogger_MultipleCallbacks(t *testing.T) {
 	}
 }
 
-// TestCallbackLogger_CallbackAfterLog checks that callback is invoked after
-// the message has been passed to the underlying logger.
+// TestCallbackLogger_CallbackAfterLog tests that the callback runs after
+// the underlying logger has received the call.
 func TestCallbackLogger_CallbackAfterLog(t *testing.T) {
 	t.Parallel()
 
-	mockLogger := new(mockLogger)
+	base := new(mockLogger)
 	ctx := context.Background()
 	execedDebug := false
 	execedInfo := false
 	execedWarn := false
 	execedError := false
 
-	opts := []decorator.CallbackOption{
-		decorator.WithDebugCallback(func(ctx context.Context) {
-			if len(mockLogger.debugIn) != 1 {
-				t.Errorf("Expected Debug to be called once, got %d calls", len(mockLogger.debugIn))
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithDebugCallback(func(context.Context, string, ...any) {
+			if len(base.debugIn) != 1 {
+				t.Errorf("expected Debug to be called once, got %d calls", len(base.debugIn))
 			}
 
 			execedDebug = true
 		}),
-		decorator.WithInfoCallback(func(ctx context.Context) {
-			if len(mockLogger.infoIn) != 1 {
-				t.Errorf("Expected Info to be called once, got %d calls", len(mockLogger.infoIn))
+		decorator.WithInfoCallback(func(context.Context, string, ...any) {
+			if len(base.infoIn) != 1 {
+				t.Errorf("expected Info to be called once, got %d calls", len(base.infoIn))
 			}
 
 			execedInfo = true
 		}),
-		decorator.WithWarnCallback(func(ctx context.Context) {
-			if len(mockLogger.warnIn) != 1 {
-				t.Errorf("Expected Warn to be called once, got %d calls", len(mockLogger.warnIn))
+		decorator.WithWarnCallback(func(context.Context, string, ...any) {
+			if len(base.warnIn) != 1 {
+				t.Errorf("expected Warn to be called once, got %d calls", len(base.warnIn))
 			}
 
 			execedWarn = true
 		}),
-		decorator.WithErrorCallback(func(ctx context.Context) {
-			if len(mockLogger.errorIn) != 1 {
-				t.Errorf("Expected Error to be called once, got %d calls", len(mockLogger.errorIn))
+		decorator.WithErrorCallback(func(context.Context, error, ...any) {
+			if len(base.errorIn) != 1 {
+				t.Errorf("expected Error to be called once, got %d calls", len(base.errorIn))
 			}
 
 			execedError = true
 		}),
-	}
-
-	logger, err := decorator.NewCallbackLogger(mockLogger, opts...)
-	if err != nil {
-		t.Fatalf("unexpected error when creating CallbackLogger: %v", err)
-	}
+	)
 
 	logger.Debug(ctx, "debug message")
 	logger.Info(ctx, "info message")
@@ -787,4 +550,64 @@ func TestCallbackLogger_CallbackAfterLog(t *testing.T) {
 	if !execedError {
 		t.Errorf("expected error callback to be executed")
 	}
+}
+
+// TestCallbackLogger_CopiesArgs tests that the callback receives a copy of
+// the args slice, so mutations in the callback do not affect the logger.
+func TestCallbackLogger_CopiesArgs(t *testing.T) {
+	t.Parallel()
+
+	base := new(mockLogger)
+
+	logger := newCallbackLogger(
+		t,
+		base,
+		decorator.WithInfoCallback(func(_ context.Context, _ string, args ...any) {
+			args[0] = "from-callback"
+		}),
+	)
+
+	logger.Info(context.Background(), "info message", "original")
+
+	if len(base.infoIn) != 1 || len(base.infoIn[0].args) != 1 {
+		t.Fatalf("expected 1 info call with 1 argument, got %+v", base.infoIn)
+	}
+
+	if base.infoIn[0].args[0] != "original" {
+		t.Errorf("expected logger args to stay original, got %v", base.infoIn[0].args[0])
+	}
+}
+
+// TestCallbackLogger_PanicInLoggerSkipsCallback tests that a panic in the
+// underlying logger prevents the callback from running.
+func TestCallbackLogger_PanicInLoggerSkipsCallback(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	inner := &hookLogger{
+		infoFn: func() {
+			panic("underlying logger panic")
+		},
+	}
+
+	logger := newCallbackLogger(
+		t,
+		inner,
+		decorator.WithInfoCallback(func(context.Context, string, ...any) {
+			called = true
+		}),
+	)
+
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatal("expected panic from underlying logger")
+		}
+
+		if called {
+			t.Errorf("expected callback not to run after logger panic")
+		}
+	}()
+
+	logger.Info(context.Background(), "info message")
 }
