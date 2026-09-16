@@ -118,6 +118,13 @@ linters:
           deny:
             - pkg: github.com/pkg/errors
               desc: Should be replaced by standard lib errors package
+    ireturn:
+      allow:
+        - anon
+        - error
+        - empty
+        - stdlib
+        - github.com/yuppyweb/cakelog.Logger
     varnamelen:
       min-name-length: 2
   exclusions:
