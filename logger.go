@@ -1,6 +1,6 @@
 // Package cakelog provides a unified Logger interface for application code.
 //
-// Swap the backend through adapters and add behavior with stackable
+// Swap the backend through adapters and add behavior with composable
 // decorators. Application code depends on Logger, not on a specific
 // logging library.
 package cakelog
@@ -17,10 +17,19 @@ import (
 // collapse them, depending on its own field model.
 //
 // Error has no separate message argument. Built-in adapters log
-// err.Error(), or an empty message when err is nil.
+// err.Error() as the message. A nil err is allowed; the message
+// then follows the backend (empty string, omitted field, or "<nil>").
+// Adapters that have a native error API also attach a non-nil err
+// as a structured field.
 //
 // ctx is passed on every call. An adapter forwards it when the backend
 // accepts context, and otherwise ignores it.
+//
+// Adapters do not rewrite the backend's caller or source. When a backend
+// records file:line, it is the adapter method, and decorator frames when
+// the logger is wrapped. If the application call site is required,
+// configure skip or a caller hook on the backend. A fixed skip only
+// matches one wrap depth.
 type Logger interface {
 	// Debug logs a debug-level message.
 	Debug(ctx context.Context, msg string, args ...any)
