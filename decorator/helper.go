@@ -7,6 +7,8 @@ import (
 	"github.com/yuppyweb/cakelog"
 )
 
+// ErrNilLogger is returned by decorator constructors when log is nil,
+// including a typed nil such as a nil pointer stored in Logger.
 var ErrNilLogger = errors.New("logger is nil")
 
 func requireLogger(log cakelog.Logger) error {

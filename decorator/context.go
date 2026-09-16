@@ -81,8 +81,8 @@ func (cl *contextLogger) Error(ctx context.Context, err error, args ...any) {
 }
 
 // prependContextArgs returns args with the map from fields prepended.
-// A nil or empty map leaves args unchanged. The returned slice does not
-// alias the caller's argument storage.
+// A nil or empty map returns args unchanged and may alias the caller's
+// argument storage. A non-empty map is prepended on a new slice.
 func (cl *contextLogger) prependContextArgs(ctx context.Context, args []any) []any {
 	fields := cl.fields(ctx)
 
