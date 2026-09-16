@@ -341,6 +341,22 @@ var _ logrus.Hook = (*logrusCaptureHook)(nil)
 func newLogrusSink(t *testing.T, minLevel logrus.Level) *adapterSink {
 	t.Helper()
 
+	return newLogrusFieldSink(t, minLevel, nil)
+}
+
+func newLogrusEntrySink(t *testing.T, minLevel logrus.Level) *adapterSink {
+	t.Helper()
+
+	return newLogrusFieldSink(t, minLevel, logrus.Fields{"service": "api"})
+}
+
+func newLogrusFieldSink(
+	t *testing.T,
+	minLevel logrus.Level,
+	fields logrus.Fields,
+) *adapterSink {
+	t.Helper()
+
 	entries := make([]capturedEntry, 0)
 
 	log := logrus.New()
@@ -349,13 +365,22 @@ func newLogrusSink(t *testing.T, minLevel logrus.Level) *adapterSink {
 	log.SetFormatter(&logrus.JSONFormatter{DisableTimestamp: true})
 	log.AddHook(&logrusCaptureHook{entries: &entries})
 
-	logger, err := logrusadapter.New(log)
+	var backend logrus.FieldLogger = log
+
+	name := "logrus"
+
+	if len(fields) > 0 {
+		backend = log.WithFields(fields)
+		name = "logrus_entry"
+	}
+
+	logger, err := logrusadapter.New(backend)
 	if err != nil {
 		t.Fatalf("failed to create logrus adapter: %v", err)
 	}
 
 	return &adapterSink{
-		name:      "logrus",
+		name:      name,
 		logger:    logger,
 		entries:   &entries,
 		lastWins:  true,

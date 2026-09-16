@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/yuppyweb/cakelog"
 	"github.com/yuppyweb/cakelog/decorator"
 )
@@ -447,6 +448,28 @@ func TestAdapterStack_MixedMapAndKeyValueFlattens(t *testing.T) {
 		assertField(t, sink, entry, "action", "login")
 		assertField(t, sink, entry, "password", stackRedacted)
 	})
+}
+
+// TestAdapterStack_LogrusEntryKeepsPreSetFields checks that wrapping a
+// *logrus.Entry keeps fields already on that Entry through the recommended
+// stack, together with masked context and call-site args.
+func TestAdapterStack_LogrusEntryKeepsPreSetFields(t *testing.T) {
+	t.Parallel()
+
+	masker := new(stackMasker)
+	sink := newLogrusEntrySink(t, logrus.DebugLevel)
+	logger := wrapRecommendedLevelDebug(t, sink.logger, masker)
+
+	ctx := withTestValue(context.Background(), "token", stackSecret)
+	logger.Info(ctx, "login secret", "password", stackSecret, "user", "alice")
+
+	if len(masker.messages) != 1 || masker.messages[0] != "login secret" {
+		t.Errorf("expected masker message 'login secret', got %v", masker.messages)
+	}
+
+	entry := entryByLevel(t, sink, levelInfo)
+	assertMaskedLogin(t, sink, entry)
+	assertField(t, sink, entry, "service", "api")
 }
 
 // TestAdapterStack_NopLoggerInnerStillRunsMaskAndCallback checks that NopLogger

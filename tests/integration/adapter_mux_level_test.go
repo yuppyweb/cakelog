@@ -77,6 +77,32 @@ func TestAdapterStack_MuxTwoAdapters(t *testing.T) {
 		assertMaskedInfoEntry(t, logrusSink)
 		assertMaskedInfoEntry(t, zerologSink)
 	})
+
+	t.Run("slog_logrus_entry", func(t *testing.T) {
+		t.Parallel()
+
+		masker := new(stackMasker)
+		slogSink := newSlogSink(t, slog.LevelDebug)
+		logrusSink := newLogrusEntrySink(t, logrus.DebugLevel)
+
+		logger := wrapRecommendedStack(
+			t,
+			newMuxLogger(t, slogSink.logger, logrusSink.logger),
+			masker,
+		)
+
+		ctx := withTestValue(context.Background(), "token", stackSecret)
+		logger.Info(ctx, "login secret", "password", stackSecret)
+
+		if len(masker.messages) != 1 || masker.messages[0] != "login secret" {
+			t.Errorf("expected masker to run once, got %v", masker.messages)
+		}
+
+		assertMaskedInfoEntry(t, slogSink)
+		assertMaskedInfoEntry(t, logrusSink)
+		assertField(t, logrusSink, entryByLevel(t, logrusSink, levelInfo), "service", "api")
+		assertNoField(t, slogSink, entryByLevel(t, slogSink, levelInfo), "service")
+	})
 }
 
 // TestAdapterStack_MuxAllAdapters checks that one Info call fans out to all
