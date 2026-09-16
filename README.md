@@ -1,10 +1,9 @@
 # 🍰 Cakelog
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/yuppyweb/cakelog)](https://github.com/yuppyweb/cakelog)
-[![Go Report Card](https://goreportcard.com/badge/github.com/yuppyweb/cakelog)](https://goreportcard.com/report/github.com/yuppyweb/cakelog)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/yuppyweb/cakelog)](https://github.com/yuppyweb/cakelog) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) 
 
-**Cakelog** is a Go logging library with a small unified `Logger` interface. Swap the backend through adapters (Slog, Zap, Logrus, Zerolog) and add behavior with stackable decorators.
+**Cakelog** is a Go logging library with a small unified `Logger` interface. Swap the backend through adapters (Slog, Zap, Logrus, Zerolog) and add behavior with composable decorators.
 
 ## ✨ Features
 
@@ -102,7 +101,9 @@ type Logger interface {
 }
 ```
 
-`Error` has no separate message argument: the backend logs `err.Error()` (or an empty message when `err` is nil). Args may mix alternating key-value pairs and maps.
+`Error` has no separate message argument: the message is `err.Error()`. A nil `err` is allowed; each backend chooses the message shape (slog and zap use an empty string, zerolog omits the message field, logrus prints `<nil>`).
+
+Built-in adapters also pass a non-nil `err` through the backend's error API under the key `error`: slog attribute `error`, `zap.Error`, zerolog `Event.Err`, logrus `WithError`. A call-site field with the same key follows that backend's duplicate-key rules. Args may mix alternating key-value pairs and maps.
 
 ### NopLogger 🚫
 
@@ -121,7 +122,12 @@ logger.Info(ctx, "this is discarded")
 - a map used as a pair value is kept as a single field
 - duplicate keys are kept in encounter order
 
-A backend may then keep both entries or collapse them, depending on its own field model.
+`adapter.Fields` always preserves duplicates. What is then emitted is up to the backend, not Cakelog:
+
+- slog and zap keep every occurrence
+- logrus and zerolog keep the last value (map / JSON object)
+
+This is intentional: swapping adapters keeps Cakelog's parse rules, but not a backend's own field model.
 
 ```go
 logger.Info(ctx, "request finished",
@@ -133,6 +139,8 @@ logger.Info(ctx, "request finished",
 ## 🔌 Adapters
 
 Each adapter lives in its own package and exposes `New`. A nil backend returns a package-specific error.
+
+Cakelog does not rewrite caller or source location. If the backend records file:line (slog `AddSource`, zap `AddCaller`, logrus `ReportCaller`, zerolog `Caller`), it is the adapter method — and decorator frames when the logger is wrapped. A fixed skip such as zap `AddCallerSkip` only matches one wrap depth. Configure skip or a caller hook on the backend if you need the application call site.
 
 ### Slog Adapter 🔮
 
@@ -151,6 +159,8 @@ logger, err := slogadapter.New(slogLogger)
 
 Zap's standard methods do not take `context.Context`. The adapter still accepts `ctx` on the `Logger` interface, but does not forward it.
 
+`cakelog.Logger` has no `Sync`. A production zap logger buffers output; call `Sync` on the `*zap.Logger` you passed to `New` before shutdown, or the last entries may be lost. `Sync` on stdout or stderr can return a non-nil error on some platforms; ignoring it is common.
+
 ```go
 import (
     "go.uber.org/zap"
@@ -162,11 +172,14 @@ zapLogger, err := zap.NewProduction()
 if err != nil {
     log.Fatal(err)
 }
+defer func() { _ = zapLogger.Sync() }()
 
 logger, err := zapadapter.New(zapLogger)
 ```
 
 ### Logrus Adapter 📊
+
+`New` takes a `logrus.FieldLogger`: `*logrus.Logger`, `*logrus.Entry`, or another implementation. A nil value, including a typed nil pointer stored in the interface, returns `ErrNilLogrusLogger`.
 
 ```go
 import (
@@ -176,6 +189,9 @@ import (
 
 logrusLogger := logrus.New()
 logger, err := logrusadapter.New(logrusLogger)
+
+entry := logrusLogger.WithField("service", "api")
+logger, err = logrusadapter.New(entry)
 ```
 
 ### Zerolog Adapter 📬
