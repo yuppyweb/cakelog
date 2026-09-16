@@ -10,14 +10,14 @@ import (
 	"github.com/yuppyweb/cakelog/adapter/slogadapter"
 )
 
-// mockSlogHandler is a custom slog.Handler implementation used for testing the SlogLogger adapter.
+// mockSlogHandler is a custom slog.Handler implementation used for testing the slog adapter.
 // It captures log records and contexts for verification in tests.
 type mockSlogHandler struct {
 	contexts []context.Context
 	records  []slog.Record
 }
 
-// Handle captures the log record and context when a log message is handled through the SlogLogger,
+// Handle captures the log record and context when a log message is handled through the slog adapter,
 // allowing tests to verify that the correct log level, message, and attributes are being used.
 func (h *mockSlogHandler) Handle(ctx context.Context, record slog.Record) error {
 	h.contexts = append(h.contexts, ctx)
@@ -44,18 +44,18 @@ func (h *mockSlogHandler) Enabled(context.Context, slog.Level) bool {
 }
 
 // Assert that mockSlogHandler implements the slog.Handler interface.
-// This allows us to use it as a handler for testing the SlogLogger adapter.
+// This allows us to use it as a handler for testing the slog adapter.
 var _ slog.Handler = (*mockSlogHandler)(nil)
 
-// TestSlogLogger_Debug verifies that SlogLogger correctly logs debug messages.
-func TestSlogLogger_Debug(t *testing.T) {
+// TestAdapter_Debug verifies that the slog adapter correctly logs debug messages.
+func TestAdapter_Debug(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	ctx := context.Background()
@@ -93,15 +93,15 @@ func TestSlogLogger_Debug(t *testing.T) {
 	}
 }
 
-// TestSlogLogger_Info verifies that SlogLogger correctly logs info messages.
-func TestSlogLogger_Info(t *testing.T) {
+// TestAdapter_Info verifies that the slog adapter correctly logs info messages.
+func TestAdapter_Info(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	ctx := context.Background()
@@ -139,15 +139,15 @@ func TestSlogLogger_Info(t *testing.T) {
 	}
 }
 
-// TestSlogLogger_Warn verifies that SlogLogger correctly logs warn messages.
-func TestSlogLogger_Warn(t *testing.T) {
+// TestAdapter_Warn verifies that the slog adapter correctly logs warn messages.
+func TestAdapter_Warn(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	ctx := context.Background()
@@ -185,21 +185,22 @@ func TestSlogLogger_Warn(t *testing.T) {
 	}
 }
 
-// TestSlogLogger_Error verifies that SlogLogger correctly logs error messages.
-func TestSlogLogger_Error(t *testing.T) {
+// TestAdapter_Error verifies that the slog adapter correctly logs error messages.
+func TestAdapter_Error(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "errorTestKey", "error test value")
 
-	log.Error(ctx, errors.New("error message"), "error", 123)
+	loggedErr := errors.New("error message")
+	log.Error(ctx, loggedErr, "code", 123)
 
 	if len(handler.records) != 1 {
 		t.Fatalf("expected 1 log record, got %d", len(handler.records))
@@ -216,11 +217,12 @@ func TestSlogLogger_Error(t *testing.T) {
 	}
 
 	attrs := slogAttrs(record)
-	if len(attrs) != 1 {
-		t.Fatalf("expected 1 attribute, got %d", len(attrs))
+	if len(attrs) != 2 {
+		t.Fatalf("expected 2 attributes, got %d", len(attrs))
 	}
 
-	assertSlogAttr(t, attrs, "error", 123)
+	assertSlogAttr(t, attrs, "error", loggedErr)
+	assertSlogAttr(t, attrs, "code", 123)
 
 	if len(handler.contexts) != 1 {
 		t.Fatalf("expected 1 context, got %d", len(handler.contexts))
@@ -231,15 +233,15 @@ func TestSlogLogger_Error(t *testing.T) {
 	}
 }
 
-// TestSlogLogger_ErrorNil verifies that SlogLogger logs a nil error with an empty message.
-func TestSlogLogger_ErrorNil(t *testing.T) {
+// TestAdapter_ErrorNil verifies that the slog adapter logs a nil error with an empty message.
+func TestAdapter_ErrorNil(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	ctx := context.Background()
@@ -277,15 +279,15 @@ func TestSlogLogger_ErrorNil(t *testing.T) {
 	}
 }
 
-// TestSlogLogger_FlattenMap verifies that SlogLogger expands a map into individual attributes.
-func TestSlogLogger_FlattenMap(t *testing.T) {
+// TestAdapter_FlattenMap verifies that the slog adapter expands a map into individual attributes.
+func TestAdapter_FlattenMap(t *testing.T) {
 	t.Parallel()
 
 	handler := new(mockSlogHandler)
 
 	log, err := slogadapter.New(slog.New(handler))
 	if err != nil {
-		t.Fatalf("failed to create SlogLogger: %v", err)
+		t.Fatalf("failed to create slog adapter: %v", err)
 	}
 
 	log.Info(context.Background(), "mapped", map[string]any{"method": "GET", "status": 200})
@@ -303,15 +305,18 @@ func TestSlogLogger_FlattenMap(t *testing.T) {
 	assertSlogAttr(t, attrs, "status", 200)
 }
 
-// TestSlogLogger_NoArgs verifies that SlogLogger logs messages without extra arguments.
-func TestSlogLogger_NoArgs(t *testing.T) {
+// TestAdapter_NoArgs verifies that the slog adapter logs messages without extra arguments.
+func TestAdapter_NoArgs(t *testing.T) {
 	t.Parallel()
 
+	loggedErr := errors.New("error message")
 	testCases := []struct {
-		name  string
-		call  func(cakelog.Logger)
-		level slog.Level
-		msg   string
+		name      string
+		call      func(cakelog.Logger)
+		level     slog.Level
+		msg       string
+		wantAttrs int
+		errAttr   error
 	}{
 		{
 			name: "debug",
@@ -340,10 +345,12 @@ func TestSlogLogger_NoArgs(t *testing.T) {
 		{
 			name: "error",
 			call: func(logger cakelog.Logger) {
-				logger.Error(context.Background(), errors.New("error message"))
+				logger.Error(context.Background(), loggedErr)
 			},
-			level: slog.LevelError,
-			msg:   "error message",
+			level:     slog.LevelError,
+			msg:       "error message",
+			wantAttrs: 1,
+			errAttr:   loggedErr,
 		},
 	}
 
@@ -355,7 +362,7 @@ func TestSlogLogger_NoArgs(t *testing.T) {
 
 			logger, err := slogadapter.New(slog.New(handler))
 			if err != nil {
-				t.Fatalf("failed to create SlogLogger: %v", err)
+				t.Fatalf("failed to create slog adapter: %v", err)
 			}
 
 			tc.call(logger)
@@ -374,29 +381,80 @@ func TestSlogLogger_NoArgs(t *testing.T) {
 				t.Errorf("expected level %s, got %s", tc.level, record.Level)
 			}
 
-			if record.NumAttrs() != 0 {
-				t.Errorf("expected no attributes, got %v", slogAttrs(record))
+			attrs := slogAttrs(record)
+			if record.NumAttrs() != tc.wantAttrs {
+				t.Errorf("expected %d attributes, got %v", tc.wantAttrs, attrs)
+			}
+
+			if tc.errAttr != nil {
+				assertSlogAttr(t, attrs, "error", tc.errAttr)
 			}
 		})
 	}
 }
 
-// TestNewSlogLogger_WithNilLogger verifies that NewSlogLogger returns an error when provided with a nil logger.
-func TestNewSlogLogger_WithNilLogger(t *testing.T) {
+// TestNew_NilLogger verifies that New returns an error when provided with a nil logger.
+func TestNew_NilLogger(t *testing.T) {
 	t.Parallel()
 
 	_, err := slogadapter.New(nil)
 	if err == nil {
-		t.Fatal("expected error when creating SlogLogger with nil logger, but got nil")
+		t.Fatal("expected error when creating slog adapter with nil logger, but got nil")
 	}
 
 	if !errors.Is(err, slogadapter.ErrNilSlogLogger) {
 		t.Fatalf(
-			"unexpected error when creating SlogLogger with nil logger:\nGot:  %v\nWant: %v",
+			"unexpected error when creating slog adapter with nil logger:\nGot:  %v\nWant: %v",
 			err,
 			slogadapter.ErrNilSlogLogger,
 		)
 	}
+}
+
+// TestAdapter_DuplicateKeys verifies that slog keeps both values for a repeated key.
+func TestAdapter_DuplicateKeys(t *testing.T) {
+	t.Parallel()
+
+	handler := new(mockSlogHandler)
+
+	log, err := slogadapter.New(slog.New(handler))
+	if err != nil {
+		t.Fatalf("failed to create slog adapter: %v", err)
+	}
+
+	log.Info(context.Background(), "dup", "status", "ok", "status", "fail")
+
+	if len(handler.records) != 1 {
+		t.Fatalf("expected 1 log record, got %d", len(handler.records))
+	}
+
+	got := slogAttrList(handler.records[0])
+	want := []slog.Attr{
+		slog.String("status", "ok"),
+		slog.String("status", "fail"),
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("expected %d attributes, got %v", len(want), got)
+	}
+
+	for i := range want {
+		if got[i].Key != want[i].Key || got[i].Value.String() != want[i].Value.String() {
+			t.Errorf("unexpected attribute %d: got %#v, want %#v", i, got[i], want[i])
+		}
+	}
+}
+
+func slogAttrList(record slog.Record) []slog.Attr {
+	attrs := make([]slog.Attr, 0, record.NumAttrs())
+
+	record.Attrs(func(attr slog.Attr) bool {
+		attrs = append(attrs, attr)
+
+		return true
+	})
+
+	return attrs
 }
 
 func slogAttrs(record slog.Record) map[string]slog.Value {

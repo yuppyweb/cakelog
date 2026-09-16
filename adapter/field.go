@@ -6,7 +6,9 @@ import (
 )
 
 const (
-	extraArgKey      = "arg"
+	// extraArgKey is the field name for a trailing unpaired argument.
+	extraArgKey = "arg"
+	// keyValuePairSize is the number of args consumed as one key-value pair.
 	keyValuePairSize = 2
 )
 
@@ -28,8 +30,9 @@ type Field struct {
 //   - a map used as a pair value is kept as a single field;
 //   - duplicate keys are kept in encounter order, including equal values.
 //
-// Adapters emit every returned field. A backend may then keep both entries or
-// collapse them, depending on its own field model.
+// Adapters emit every returned field. What a backend then emits is its own
+// field model: slog and zap keep every occurrence; logrus and zerolog keep
+// the last value.
 func Fields(args []any) []Field {
 	if len(args) == 0 {
 		return nil

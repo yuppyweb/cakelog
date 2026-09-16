@@ -9,6 +9,7 @@ import (
 	"github.com/yuppyweb/cakelog/adapter"
 )
 
+// ErrNilZerologLogger is returned by New when logger is nil.
 var ErrNilZerologLogger = errors.New("zerolog logger is nil")
 
 // zerologAdapter is an adapter that allows using a zerolog.Logger as a cakelog.Logger.
@@ -42,13 +43,15 @@ func (zl *zerologAdapter) Warn(ctx context.Context, msg string, args ...any) {
 }
 
 // Error sends an error message to the underlying zerolog.Logger with the provided context, error, and arguments.
+// A non-nil err is also attached with Event.Err before call-site fields. A later
+// field named "error" overwrites it, matching zerolog last-wins JSON objects.
 func (zl *zerologAdapter) Error(ctx context.Context, err error, args ...any) {
 	msg := ""
 	if err != nil {
 		msg = err.Error()
 	}
 
-	zerologEvent(zl.log.Error().Ctx(ctx), args).Msg(msg)
+	zerologEvent(zl.log.Error().Err(err).Ctx(ctx), args).Msg(msg)
 }
 
 func zerologEvent(event *zerolog.Event, args []any) *zerolog.Event {
@@ -59,5 +62,5 @@ func zerologEvent(event *zerolog.Event, args []any) *zerolog.Event {
 	return event
 }
 
-// Ensures that ZerologLogger implements the cakelog.Logger interface.
+// Ensures that zerologAdapter implements the cakelog.Logger interface.
 var _ cakelog.Logger = (*zerologAdapter)(nil)

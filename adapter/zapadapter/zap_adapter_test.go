@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// mockZapCore is a custom zapcore.Core implementation used for testing the ZapLogger adapter.
+// mockZapCore is a custom zapcore.Core implementation used for testing the zap adapter.
 // It captures log entries and fields for verification in tests.
 type mockZapCore struct {
 	entry  zapcore.Entry
@@ -31,12 +31,12 @@ func (c *mockZapCore) With(fields []zapcore.Field) zapcore.Core {
 }
 
 // Check adds the log entry to the checked entry if the log level is enabled,
-// allowing the ZapLogger to write log messages through this mock core.
+// allowing the zap adapter to write log messages through this mock core.
 func (c *mockZapCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	return ce.AddCore(ent, c)
 }
 
-// Write captures the log entry and fields when a log message is written through the ZapLogger,
+// Write captures the log entry and fields when a log message is written through the zap adapter,
 // allowing tests to verify that the correct log level, message, and fields are being used.
 func (c *mockZapCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	c.entry = ent
@@ -50,15 +50,15 @@ func (c *mockZapCore) Sync() error {
 	return nil
 }
 
-// TestZapLogger_Debug verifies that ZapLogger correctly logs debug messages.
-func TestZapLogger_Debug(t *testing.T) {
+// TestAdapter_Debug verifies that the zap adapter correctly logs debug messages.
+func TestAdapter_Debug(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
@@ -74,15 +74,15 @@ func TestZapLogger_Debug(t *testing.T) {
 	assertZapField(t, mockCore.fields, "debug", 42)
 }
 
-// TestZapLogger_Info verifies that ZapLogger correctly logs info messages.
-func TestZapLogger_Info(t *testing.T) {
+// TestAdapter_Info verifies that the zap adapter correctly logs info messages.
+func TestAdapter_Info(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
 	logger.Info(context.Background(), "info message", "info", 65)
@@ -98,15 +98,15 @@ func TestZapLogger_Info(t *testing.T) {
 	assertZapField(t, mockCore.fields, "info", 65)
 }
 
-// TestZapLogger_Warn verifies that ZapLogger correctly logs warn messages.
-func TestZapLogger_Warn(t *testing.T) {
+// TestAdapter_Warn verifies that the zap adapter correctly logs warn messages.
+func TestAdapter_Warn(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 99)
@@ -122,8 +122,8 @@ func TestZapLogger_Warn(t *testing.T) {
 	assertZapField(t, mockCore.fields, "warn", 99)
 }
 
-// TestZapLogger_Error verifies that ZapLogger correctly logs error messages.
-func TestZapLogger_Error(t *testing.T) {
+// TestAdapter_Error verifies that the zap adapter correctly logs error messages.
+func TestAdapter_Error(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
@@ -131,31 +131,32 @@ func TestZapLogger_Error(t *testing.T) {
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
-	logger.Error(context.Background(), expectedErr, "error", 123)
+	logger.Error(context.Background(), expectedErr, "code", 123)
 
 	if mockCore.entry.Level != zap.ErrorLevel {
 		t.Errorf("unexpected log level: got %v, want %v", mockCore.entry.Level, zap.ErrorLevel)
 	}
 
-	if len(mockCore.fields) != 1 {
-		t.Fatalf("unexpected number of fields: got %d, want 1", len(mockCore.fields))
+	if len(mockCore.fields) != 2 {
+		t.Fatalf("unexpected number of fields: got %d, want 2", len(mockCore.fields))
 	}
 
-	assertZapField(t, mockCore.fields, "error", 123)
+	assertZapError(t, mockCore.fields, expectedErr)
+	assertZapField(t, mockCore.fields, "code", 123)
 }
 
-// TestZapLogger_ErrorNil verifies that ZapLogger logs a nil error with an empty message.
-func TestZapLogger_ErrorNil(t *testing.T) {
+// TestAdapter_ErrorNil verifies that the zap adapter logs a nil error with an empty message.
+func TestAdapter_ErrorNil(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
 	logger.Error(context.Background(), nil, "error", 123)
@@ -175,15 +176,15 @@ func TestZapLogger_ErrorNil(t *testing.T) {
 	assertZapField(t, mockCore.fields, "error", 123)
 }
 
-// TestZapLogger_FieldsMap verifies that ZapLogger expands a map into individual fields.
-func TestZapLogger_FieldsMap(t *testing.T) {
+// TestAdapter_FieldsMap verifies that the zap adapter expands a map into individual fields.
+func TestAdapter_FieldsMap(t *testing.T) {
 	t.Parallel()
 
 	mockCore := new(mockZapCore)
 
 	logger, err := zapadapter.New(zap.New(mockCore))
 	if err != nil {
-		t.Fatalf("failed to create ZapLogger: %v", err)
+		t.Fatalf("failed to create zap adapter: %v", err)
 	}
 
 	logger.Info(context.Background(), "mapped", map[string]any{"method": "GET", "status": 200})
@@ -196,15 +197,18 @@ func TestZapLogger_FieldsMap(t *testing.T) {
 	assertZapField(t, mockCore.fields, "status", 200)
 }
 
-// TestZapLogger_NoArgs verifies that ZapLogger logs messages without extra arguments.
-func TestZapLogger_NoArgs(t *testing.T) {
+// TestAdapter_NoArgs verifies that the zap adapter logs messages without extra arguments.
+func TestAdapter_NoArgs(t *testing.T) {
 	t.Parallel()
 
+	loggedErr := errors.New("error message")
 	testCases := []struct {
-		name  string
-		call  func(cakelog.Logger)
-		level zapcore.Level
-		msg   string
+		name       string
+		call       func(cakelog.Logger)
+		level      zapcore.Level
+		msg        string
+		wantFields int
+		errField   error
 	}{
 		{
 			name: "debug",
@@ -233,10 +237,12 @@ func TestZapLogger_NoArgs(t *testing.T) {
 		{
 			name: "error",
 			call: func(logger cakelog.Logger) {
-				logger.Error(context.Background(), errors.New("error message"))
+				logger.Error(context.Background(), loggedErr)
 			},
-			level: zap.ErrorLevel,
-			msg:   "error message",
+			level:      zap.ErrorLevel,
+			msg:        "error message",
+			wantFields: 1,
+			errField:   loggedErr,
 		},
 	}
 
@@ -248,7 +254,7 @@ func TestZapLogger_NoArgs(t *testing.T) {
 
 			logger, err := zapadapter.New(zap.New(mockCore))
 			if err != nil {
-				t.Fatalf("failed to create ZapLogger: %v", err)
+				t.Fatalf("failed to create zap adapter: %v", err)
 			}
 
 			tc.call(logger)
@@ -261,29 +267,78 @@ func TestZapLogger_NoArgs(t *testing.T) {
 				t.Errorf("unexpected log message: got %q, want %q", mockCore.entry.Message, tc.msg)
 			}
 
-			if len(mockCore.fields) != 0 {
-				t.Errorf("expected no fields, got %v", mockCore.fields)
+			if len(mockCore.fields) != tc.wantFields {
+				t.Errorf("expected %d fields, got %v", tc.wantFields, mockCore.fields)
+			}
+
+			if tc.errField != nil {
+				assertZapError(t, mockCore.fields, tc.errField)
 			}
 		})
 	}
 }
 
-// TestNewZapLogger_WithNilLogger verifies that NewZapLogger returns an error when provided with a nil logger.
-func TestNewZapLogger_WithNilLogger(t *testing.T) {
+// TestNew_NilLogger verifies that New returns an error when provided with a nil logger.
+func TestNew_NilLogger(t *testing.T) {
 	t.Parallel()
 
 	_, err := zapadapter.New(nil)
 	if err == nil {
-		t.Fatal("expected error when creating ZapLogger with nil logger, but got nil")
+		t.Fatal("expected error when creating zap adapter with nil logger, but got nil")
 	}
 
 	if !errors.Is(err, zapadapter.ErrNilZapLogger) {
 		t.Errorf(
-			"unexpected error when creating ZapLogger with nil logger:\nGot:  %v\nWant: %v",
+			"unexpected error when creating zap adapter with nil logger:\nGot:  %v\nWant: %v",
 			err,
 			zapadapter.ErrNilZapLogger,
 		)
 	}
+}
+
+// TestAdapter_DuplicateKeys verifies that zap keeps both values for a repeated key.
+func TestAdapter_DuplicateKeys(t *testing.T) {
+	t.Parallel()
+
+	mockCore := new(mockZapCore)
+
+	logger, err := zapadapter.New(zap.New(mockCore))
+	if err != nil {
+		t.Fatalf("failed to create zap adapter: %v", err)
+	}
+
+	logger.Info(context.Background(), "dup", "status", "ok", "status", "fail")
+
+	if len(mockCore.fields) != 2 {
+		t.Fatalf("unexpected number of fields: got %d, want 2", len(mockCore.fields))
+	}
+
+	if mockCore.fields[0].Key != "status" || mockCore.fields[1].Key != "status" {
+		t.Fatalf("expected two status fields, got %v", mockCore.fields)
+	}
+
+	assertZapField(t, mockCore.fields[:1], "status", "ok")
+	assertZapField(t, mockCore.fields[1:], "status", "fail")
+}
+
+func assertZapError(t *testing.T, fields []zapcore.Field, want error) {
+	t.Helper()
+
+	wantField := zap.Error(want)
+
+	for _, field := range fields {
+		if field.Key != "error" {
+			continue
+		}
+
+		if !field.Equals(wantField) {
+			t.Errorf("unexpected error field: got %#v, want %#v", field, wantField)
+		}
+
+		return
+	}
+
+	t.Errorf("expected zap.Error field, got %v", fields)
 }
 
 func assertZapField(t *testing.T, fields []zapcore.Field, key string, want any) {

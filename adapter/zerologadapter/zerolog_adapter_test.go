@@ -13,8 +13,8 @@ import (
 	"github.com/yuppyweb/cakelog/adapter/zerologadapter"
 )
 
-// TestZerologLogger_Debug verifies that ZerologLogger correctly logs debug messages.
-func TestZerologLogger_Debug(t *testing.T) {
+// TestAdapter_Debug verifies that the zerolog adapter correctly logs debug messages.
+func TestAdapter_Debug(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -22,7 +22,7 @@ func TestZerologLogger_Debug(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
 	logger.Debug(context.Background(), "debug message", "debug", 42)
@@ -32,8 +32,8 @@ func TestZerologLogger_Debug(t *testing.T) {
 	})
 }
 
-// TestZerologLogger_Info verifies that ZerologLogger correctly logs info messages.
-func TestZerologLogger_Info(t *testing.T) {
+// TestAdapter_Info verifies that the zerolog adapter correctly logs info messages.
+func TestAdapter_Info(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -41,7 +41,7 @@ func TestZerologLogger_Info(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
 	logger.Info(context.Background(), "info message", "info", 65)
@@ -51,8 +51,8 @@ func TestZerologLogger_Info(t *testing.T) {
 	})
 }
 
-// TestZerologLogger_Warn verifies that ZerologLogger correctly logs warn messages.
-func TestZerologLogger_Warn(t *testing.T) {
+// TestAdapter_Warn verifies that the zerolog adapter correctly logs warn messages.
+func TestAdapter_Warn(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -60,7 +60,7 @@ func TestZerologLogger_Warn(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
 	logger.Warn(context.Background(), "warn message", "warn", 80)
@@ -70,8 +70,8 @@ func TestZerologLogger_Warn(t *testing.T) {
 	})
 }
 
-// TestZerologLogger_Error verifies that ZerologLogger correctly logs error messages.
-func TestZerologLogger_Error(t *testing.T) {
+// TestAdapter_Error verifies that the zerolog adapter correctly logs error messages.
+func TestAdapter_Error(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -79,18 +79,20 @@ func TestZerologLogger_Error(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
-	logger.Error(context.Background(), errors.New("test error"), "error", 99)
+	loggedErr := errors.New("test error")
+	logger.Error(context.Background(), loggedErr, "code", 99)
 
 	assertZerologEntry(t, readZerologEntry(t, buf), "error", "test error", map[string]any{
-		"error": float64(99),
+		"code":  float64(99),
+		"error": loggedErr.Error(),
 	})
 }
 
-// TestZerologLogger_ErrorNil verifies that ZerologLogger logs a nil error with an empty message.
-func TestZerologLogger_ErrorNil(t *testing.T) {
+// TestAdapter_ErrorNil verifies that the zerolog adapter logs a nil error with an empty message.
+func TestAdapter_ErrorNil(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -98,7 +100,7 @@ func TestZerologLogger_ErrorNil(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
 	logger.Error(context.Background(), nil, "error", 99)
@@ -128,8 +130,8 @@ func TestZerologLogger_ErrorNil(t *testing.T) {
 	}
 }
 
-// TestZerologLogger_FieldsMap verifies that ZerologLogger expands a map into individual fields.
-func TestZerologLogger_FieldsMap(t *testing.T) {
+// TestAdapter_FieldsMap verifies that the zerolog adapter expands a map into individual fields.
+func TestAdapter_FieldsMap(t *testing.T) {
 	t.Parallel()
 
 	buf := &bytes.Buffer{}
@@ -137,7 +139,7 @@ func TestZerologLogger_FieldsMap(t *testing.T) {
 
 	logger, err := zerologadapter.New(&log)
 	if err != nil {
-		t.Fatalf("failed to create ZerologLogger: %v", err)
+		t.Fatalf("failed to create zerolog adapter: %v", err)
 	}
 
 	logger.Info(context.Background(), "mapped", map[string]any{"method": "GET", "status": 200})
@@ -148,15 +150,18 @@ func TestZerologLogger_FieldsMap(t *testing.T) {
 	})
 }
 
-// TestZerologLogger_NoArgs verifies that ZerologLogger logs messages without extra arguments.
-func TestZerologLogger_NoArgs(t *testing.T) {
+// TestAdapter_NoArgs verifies that the zerolog adapter logs messages without extra arguments.
+func TestAdapter_NoArgs(t *testing.T) {
 	t.Parallel()
 
+	loggedErr := errors.New("test error")
 	testCases := []struct {
-		name  string
-		call  func(cakelog.Logger)
-		level string
-		msg   string
+		name      string
+		call      func(cakelog.Logger)
+		level     string
+		msg       string
+		wantKeys  int
+		errString string
 	}{
 		{
 			name: "debug",
@@ -185,10 +190,12 @@ func TestZerologLogger_NoArgs(t *testing.T) {
 		{
 			name: "error",
 			call: func(logger cakelog.Logger) {
-				logger.Error(context.Background(), errors.New("test error"))
+				logger.Error(context.Background(), loggedErr)
 			},
-			level: "error",
-			msg:   "test error",
+			level:     "error",
+			msg:       "test error",
+			wantKeys:  3,
+			errString: "test error",
 		},
 	}
 
@@ -201,7 +208,7 @@ func TestZerologLogger_NoArgs(t *testing.T) {
 
 			logger, err := zerologadapter.New(&log)
 			if err != nil {
-				t.Fatalf("failed to create ZerologLogger: %v", err)
+				t.Fatalf("failed to create zerolog adapter: %v", err)
 			}
 
 			tc.call(logger)
@@ -209,15 +216,23 @@ func TestZerologLogger_NoArgs(t *testing.T) {
 			entry := readZerologEntry(t, buf)
 			assertZerologEntry(t, entry, tc.level, tc.msg, nil)
 
-			if len(entry) != 2 {
-				t.Errorf("expected only level and message, got %v", entry)
+			if tc.wantKeys == 0 {
+				if len(entry) != 2 {
+					t.Errorf("expected only level and message, got %v", entry)
+				}
+			} else if len(entry) != tc.wantKeys {
+				t.Errorf("expected %d keys, got %v", tc.wantKeys, entry)
+			}
+
+			if tc.errString != "" && entry["error"] != tc.errString {
+				t.Errorf("expected error field %q, got %v", tc.errString, entry["error"])
 			}
 		})
 	}
 }
 
-// TestNewZerologLogger_WithNilLogger verifies that NewZerologLogger returns an error when provided with a nil logger.
-func TestNewZerologLogger_WithNilLogger(t *testing.T) {
+// TestNew_NilLogger verifies that New returns an error when provided with a nil logger.
+func TestNew_NilLogger(t *testing.T) {
 	t.Parallel()
 
 	_, err := zerologadapter.New(nil)
@@ -227,11 +242,30 @@ func TestNewZerologLogger_WithNilLogger(t *testing.T) {
 
 	if !errors.Is(err, zerologadapter.ErrNilZerologLogger) {
 		t.Errorf(
-			"unexpected error when creating ZerologLogger with nil logger:\nGot:  %v\nWant: %v",
+			"unexpected error when creating zerolog adapter with nil logger:\nGot:  %v\nWant: %v",
 			err,
 			zerologadapter.ErrNilZerologLogger,
 		)
 	}
+}
+
+// TestAdapter_DuplicateKeys verifies that zerolog keeps the last value for a repeated key.
+func TestAdapter_DuplicateKeys(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+	log := zerolog.New(buf)
+
+	logger, err := zerologadapter.New(&log)
+	if err != nil {
+		t.Fatalf("failed to create zerolog adapter: %v", err)
+	}
+
+	logger.Info(context.Background(), "dup", "status", "ok", "status", "fail")
+
+	assertZerologEntry(t, readZerologEntry(t, buf), "info", "dup", map[string]any{
+		"status": "fail",
+	})
 }
 
 func readZerologEntry(t *testing.T, buf *bytes.Buffer) map[string]any {

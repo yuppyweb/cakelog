@@ -9,8 +9,10 @@ import (
 	"github.com/yuppyweb/cakelog/adapter"
 )
 
+// slogArgsPairSize is the number of slice elements used to store one slog attribute.
 const slogArgsPairSize = 2
 
+// ErrNilSlogLogger is returned by New when logger is nil.
 var ErrNilSlogLogger = errors.New("slog logger is nil")
 
 // slogAdapter is an adapter that allows using a slog.Logger as a cakelog.Logger.
@@ -44,13 +46,17 @@ func (sl *slogAdapter) Warn(ctx context.Context, msg string, args ...any) {
 }
 
 // Error sends an error message to the underlying slog.Logger with the provided context, error, and arguments.
+// A non-nil err is also attached as the slog attribute "error" before call-site args.
 func (sl *slogAdapter) Error(ctx context.Context, err error, args ...any) {
 	msg := ""
+	attrs := flattenArgs(args)
+
 	if err != nil {
 		msg = err.Error()
+		attrs = append([]any{"error", err}, attrs...)
 	}
 
-	sl.log.ErrorContext(ctx, msg, flattenArgs(args)...)
+	sl.log.ErrorContext(ctx, msg, attrs...)
 }
 
 func flattenArgs(args []any) []any {
@@ -70,5 +76,5 @@ func flattenArgs(args []any) []any {
 	return out
 }
 
-// Ensures that SlogLogger implements the cakelog.Logger interface.
+// Ensures that slogAdapter implements the cakelog.Logger interface.
 var _ cakelog.Logger = (*slogAdapter)(nil)
