@@ -8,12 +8,12 @@ import (
 	"github.com/yuppyweb/cakelog"
 )
 
-// logLevel is the inclusive minimum severity that a levelLogger forwards.
-type logLevel int
+// LogLevel is the inclusive minimum severity that a levelLogger forwards.
+type LogLevel int
 
 const (
 	// LevelDebug forwards Debug, Info, Warn, and Error.
-	LevelDebug logLevel = iota
+	LevelDebug LogLevel = iota
 	// LevelInfo forwards Info, Warn, and Error. Debug is dropped.
 	LevelInfo
 	// LevelWarn forwards Warn and Error. Debug and Info are dropped.
@@ -39,7 +39,7 @@ type levelLogger struct {
 	log cakelog.Logger
 
 	// minLevel is the inclusive minimum level that is forwarded.
-	minLevel logLevel
+	minLevel LogLevel
 }
 
 // NewLevel wraps log so each log call below minLevel is dropped and the
@@ -57,7 +57,7 @@ type levelLogger struct {
 // Logger, returns a wrapped ErrNilLogger. A minLevel other than
 // LevelDebug, LevelInfo, LevelWarn, or LevelError returns a wrapped
 // ErrInvalidLogLevel that includes the numeric value.
-func NewLevel(log cakelog.Logger, minLevel logLevel) (cakelog.Logger, error) {
+func NewLevel(log cakelog.Logger, minLevel LogLevel) (cakelog.Logger, error) {
 	if err := requireLogger(log); err != nil {
 		return nil, fmt.Errorf("level logger: %w", err)
 	}
