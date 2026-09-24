@@ -11,11 +11,11 @@ import (
 // ErrNilContextFields is returned by NewContext when fields is nil.
 var ErrNilContextFields = errors.New("context fields is nil")
 
-// contextFields extracts structured fields from ctx for a log call.
+// ContextFields extracts structured fields from ctx for a log call.
 // A nil or empty map leaves the call-site arguments unchanged.
 // The returned map is prepended as-is; do not mutate it after returning
 // if that map may be reused.
-type contextFields func(ctx context.Context) map[string]any
+type ContextFields func(ctx context.Context) map[string]any
 
 // contextLogger is a decorator that prepends fields extracted from ctx
 // to each log call as a map[string]any, then forwards to the underlying
@@ -31,7 +31,7 @@ type contextLogger struct {
 	log cakelog.Logger
 
 	// fields extracts a map of fields from the log call's context.
-	fields contextFields
+	fields ContextFields
 }
 
 // NewContext wraps log so each log call prepends fields(ctx) as a
@@ -48,7 +48,7 @@ type contextLogger struct {
 // recovered. A nil log, including a typed nil such as a nil pointer
 // stored in Logger, returns a wrapped ErrNilLogger.
 // A nil fields function returns a wrapped ErrNilContextFields.
-func NewContext(log cakelog.Logger, fields contextFields) (cakelog.Logger, error) {
+func NewContext(log cakelog.Logger, fields ContextFields) (cakelog.Logger, error) {
 	if err := requireLogger(log); err != nil {
 		return nil, fmt.Errorf("context logger: %w", err)
 	}
