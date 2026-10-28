@@ -1,6 +1,6 @@
 module github.com/yuppyweb/cakelog
 
-go 1.26.6
+go 1.26.9
 
 tool (
 	github.com/go-task/task/v3/cmd/task

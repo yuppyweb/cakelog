@@ -3,12 +3,12 @@ version: '3'
 tasks:
   fix:
     cmds:
-      - golangci-lint run --fix --color=always 
+      - go tool golangci-lint run --fix --color=always 
     desc: Automatically fix linting issues
 
   lint:
     cmds:
-      - golangci-lint run --color=always
+      - go tool golangci-lint run --color=always
     desc: Run golangci-lint on the codebase
 
   test:
@@ -27,6 +27,6 @@ tasks:
 
   vuln:
     cmds:
-      - govulncheck -show=color -test ./...
+      - go tool govulncheck -show=color -test ./...
     desc: Run Go vulnerability checker
     
